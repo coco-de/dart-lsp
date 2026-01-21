@@ -15,6 +15,32 @@ curl -fsSL https://raw.githubusercontent.com/coco-de/dart-lsp/main/install.sh | 
 - `~/.local/bin/dart-lsp-mcp`에 설치
 - Claude Code 설정에 MCP 서버 등록
 
+**지원 플랫폼**:
+| 플랫폼 | 아키텍처 | 상태 |
+|--------|----------|------|
+| macOS | arm64 (Apple Silicon) | ✅ |
+| Linux | x64 | ✅ |
+| macOS | x64 (Intel) | 🚧 (소스 빌드 필요) |
+| Windows | x64 | 🚧 (소스 빌드 필요) |
+
+### 설치 확인
+
+```bash
+# 바이너리 확인
+~/.local/bin/dart-lsp-mcp --version
+
+# MCP 도구 목록 확인
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ~/.local/bin/dart-lsp-mcp
+```
+
+### 업데이트
+
+설치 스크립트를 다시 실행하면 최신 버전으로 업데이트됩니다:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/coco-de/dart-lsp/main/install.sh | bash
+```
+
 ### 소스에서 빌드
 
 ```bash
@@ -22,6 +48,8 @@ git clone https://github.com/coco-de/dart-lsp.git
 cd dart-lsp
 make install
 ```
+
+**요구사항**: Dart SDK 3.0+
 
 ## 🎯 특징
 
