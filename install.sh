@@ -125,6 +125,41 @@ with open(config_file, 'w') as f:
 print(f"✅ Configuration saved to: {config_file}")
 PYTHON
 
+# Configure project .mcp.json if exists
+if [ -f ".mcp.json" ]; then
+    echo ""
+    echo "🔧 Configuring project .mcp.json..."
+
+    python3 << PYTHON
+import json
+
+binary_path = "$BINARY_PATH"
+mcp_file = ".mcp.json"
+
+try:
+    with open(mcp_file, 'r') as f:
+        config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    config = {}
+
+# Ensure mcpServers exists
+if 'mcpServers' not in config:
+    config['mcpServers'] = {}
+
+# Add/update dart-lsp
+config['mcpServers']['dart-lsp'] = {
+    'command': binary_path,
+    'args': [],
+    'env': {}
+}
+
+with open(mcp_file, 'w') as f:
+    json.dump(config, f, indent=2)
+
+print(f"✅ Project .mcp.json updated")
+PYTHON
+fi
+
 echo ""
 echo "🎉 Installation complete!"
 echo ""
