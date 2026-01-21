@@ -1,0 +1,20 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    unused_import: warning
+    deprecated_member_use: warning
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_dynamic_calls
+    - avoid_print
+    - prefer_const_constructors
+    - prefer_final_fields
+    - prefer_single_quotes
+    - sort_constructors_first
+    - unnecessary_lambdas
