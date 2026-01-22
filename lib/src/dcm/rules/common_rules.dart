@@ -27,7 +27,8 @@ class AvoidDynamicRule extends DcmRule {
   List<String> get tags => ['#correctness', '#maintainability'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidDynamicVisitor(issues);
     result.unit.accept(visitor);
@@ -46,7 +47,8 @@ class _AvoidDynamicVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.offset,
         length: node.length,
-        message: "Avoid using 'dynamic' type. Consider using a specific type or 'Object?'.",
+        message:
+            "Avoid using 'dynamic' type. Consider using a specific type or 'Object?'.",
         severity: DiagnosticSeverity.Warning,
         ruleId: 'avoid-dynamic',
         suggestion: "Replace 'dynamic' with a specific type",
@@ -77,7 +79,8 @@ class AvoidNonNullAssertionRule extends DcmRule {
   List<String> get tags => ['#correctness', '#security'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidNonNullAssertionVisitor(issues);
     result.unit.accept(visitor);
@@ -96,7 +99,8 @@ class _AvoidNonNullAssertionVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.operator.offset,
         length: 1,
-        message: 'Avoid using non-null assertion operator (!). Consider using null-aware operators or null checks.',
+        message:
+            'Avoid using non-null assertion operator (!). Consider using null-aware operators or null checks.',
         severity: DiagnosticSeverity.Warning,
         ruleId: 'avoid-non-null-assertion',
         suggestion: 'Use ?. or ?? operators instead',
@@ -129,12 +133,14 @@ class AvoidLongFunctionsRule extends DcmRule {
   List<String> get tags => ['#maintainability', '#readability'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final ruleConfig = config.getRuleConfig(id);
     final maxLines = (ruleConfig['max-lines'] as int?) ?? defaultMaxLines;
 
-    final visitor = _AvoidLongFunctionsVisitor(issues, maxLines, result.lineInfo);
+    final visitor =
+        _AvoidLongFunctionsVisitor(issues, maxLines, result.lineInfo);
     result.unit.accept(visitor);
     return issues;
   }
@@ -149,17 +155,20 @@ class _AvoidLongFunctionsVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
-    _checkFunction(node.name.offset, node.name.length, node.name.lexeme, node.functionExpression.body);
+    _checkFunction(node.name.offset, node.name.length, node.name.lexeme,
+        node.functionExpression.body);
     super.visitFunctionDeclaration(node);
   }
 
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
-    _checkFunction(node.name.offset, node.name.length, node.name.lexeme, node.body);
+    _checkFunction(
+        node.name.offset, node.name.length, node.name.lexeme, node.body);
     super.visitMethodDeclaration(node);
   }
 
-  void _checkFunction(int nameOffset, int nameLength, String name, FunctionBody body) {
+  void _checkFunction(
+      int nameOffset, int nameLength, String name, FunctionBody body) {
     final startLine = lineInfo.getLocation(body.offset).lineNumber;
     final endLine = lineInfo.getLocation(body.end).lineNumber;
     final lines = endLine - startLine;
@@ -168,7 +177,8 @@ class _AvoidLongFunctionsVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: nameOffset,
         length: nameLength,
-        message: "Function '$name' has $lines lines which exceeds the maximum of $maxLines lines.",
+        message:
+            "Function '$name' has $lines lines which exceeds the maximum of $maxLines lines.",
         severity: DiagnosticSeverity.Information,
         ruleId: 'avoid-long-functions',
         suggestion: 'Consider breaking this function into smaller functions',
@@ -183,7 +193,8 @@ class AvoidNestedConditionalExpressionsRule extends DcmRule {
   String get id => 'avoid-nested-conditional-expressions';
 
   @override
-  String get description => 'Avoid nested conditional expressions for better readability.';
+  String get description =>
+      'Avoid nested conditional expressions for better readability.';
 
   @override
   String get category => 'common';
@@ -198,7 +209,8 @@ class AvoidNestedConditionalExpressionsRule extends DcmRule {
   List<String> get tags => ['#readability', '#maintainability'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidNestedConditionalVisitor(issues);
     result.unit.accept(visitor);
@@ -218,7 +230,8 @@ class _AvoidNestedConditionalVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.offset,
         length: node.length,
-        message: 'Avoid nested conditional expressions. Consider using if-else statements instead.',
+        message:
+            'Avoid nested conditional expressions. Consider using if-else statements instead.',
         severity: DiagnosticSeverity.Warning,
         ruleId: 'avoid-nested-conditional-expressions',
         suggestion: 'Replace with if-else statements for better readability',
@@ -234,7 +247,8 @@ class PreferTrailingCommaRule extends DcmRule {
   String get id => 'prefer-trailing-comma';
 
   @override
-  String get description => 'Prefer trailing commas for better version control diffs.';
+  String get description =>
+      'Prefer trailing commas for better version control diffs.';
 
   @override
   String get category => 'common';
@@ -252,9 +266,11 @@ class PreferTrailingCommaRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
-    final visitor = _PreferTrailingCommaVisitor(issues, result.lineInfo, content);
+    final visitor =
+        _PreferTrailingCommaVisitor(issues, result.lineInfo, content);
     result.unit.accept(visitor);
     return issues;
   }
@@ -294,12 +310,14 @@ class _PreferTrailingCommaVisitor extends RecursiveAstVisitor<void> {
 
     // Multi-line check
     if (lastElementLine != closingLine) {
-      final afterLastElement = content.substring(lastElement.end, closingOffset).trim();
+      final afterLastElement =
+          content.substring(lastElement.end, closingOffset).trim();
       if (!afterLastElement.startsWith(',')) {
         issues.add(DcmIssue(
           offset: lastElement.end,
           length: 1,
-          message: 'Add a trailing comma for better formatting and version control diffs.',
+          message:
+              'Add a trailing comma for better formatting and version control diffs.',
           severity: DiagnosticSeverity.Information,
           ruleId: 'prefer-trailing-comma',
           suggestion: 'Add trailing comma after the last element',
@@ -330,7 +348,8 @@ class NoEmptyBlockRule extends DcmRule {
   List<String> get tags => ['#correctness'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _NoEmptyBlockVisitor(issues, content);
     result.unit.accept(visitor);
@@ -348,12 +367,15 @@ class _NoEmptyBlockVisitor extends RecursiveAstVisitor<void> {
   void visitBlock(Block node) {
     if (node.statements.isEmpty) {
       // Check if it's intentionally empty (has comment)
-      final blockContent = content.substring(node.leftBracket.end, node.rightBracket.offset).trim();
+      final blockContent = content
+          .substring(node.leftBracket.end, node.rightBracket.offset)
+          .trim();
       if (blockContent.isEmpty || !blockContent.contains('//')) {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: 'Empty block found. Consider adding implementation or a comment explaining why it is empty.',
+          message:
+              'Empty block found. Consider adding implementation or a comment explaining why it is empty.',
           severity: DiagnosticSeverity.Warning,
           ruleId: 'no-empty-block',
         ));
@@ -365,12 +387,15 @@ class _NoEmptyBlockVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitCatchClause(CatchClause node) {
     if (node.body.statements.isEmpty) {
-      final blockContent = content.substring(node.body.leftBracket.end, node.body.rightBracket.offset).trim();
+      final blockContent = content
+          .substring(node.body.leftBracket.end, node.body.rightBracket.offset)
+          .trim();
       if (blockContent.isEmpty || !blockContent.contains('//')) {
         issues.add(DcmIssue(
           offset: node.body.offset,
           length: node.body.length,
-          message: 'Empty catch block. Consider logging the error or adding a comment explaining why it is ignored.',
+          message:
+              'Empty catch block. Consider logging the error or adding a comment explaining why it is ignored.',
           severity: DiagnosticSeverity.Warning,
           ruleId: 'no-empty-block',
         ));
@@ -404,7 +429,8 @@ class NoBooleanLiteralCompareRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _NoBooleanLiteralCompareVisitor(issues, content);
     result.unit.accept(visitor);
@@ -429,7 +455,8 @@ class _NoBooleanLiteralCompareVisitor extends RecursiveAstVisitor<void> {
             ? node.leftOperand as BooleanLiteral
             : node.rightOperand as BooleanLiteral;
         final otherOperand = isLeftBool ? node.rightOperand : node.leftOperand;
-        final otherText = content.substring(otherOperand.offset, otherOperand.end);
+        final otherText =
+            content.substring(otherOperand.offset, otherOperand.end);
 
         // Determine replacement
         // x == true -> x, x == false -> !x
@@ -447,7 +474,8 @@ class _NoBooleanLiteralCompareVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: 'Avoid comparing with boolean literals. Use the expression directly.',
+          message:
+              'Avoid comparing with boolean literals. Use the expression directly.',
           severity: DiagnosticSeverity.Information,
           ruleId: 'no-boolean-literal-compare',
           suggestion: isEquals
@@ -491,7 +519,8 @@ class PreferFirstRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _PreferFirstVisitor(issues, content);
     result.unit.accept(visitor);
@@ -544,7 +573,8 @@ class PreferLastRule extends DcmRule {
   String get id => 'prefer-last';
 
   @override
-  String get description => 'Prefer using .last for accessing the last element.';
+  String get description =>
+      'Prefer using .last for accessing the last element.';
 
   @override
   String get category => 'common';
@@ -562,7 +592,8 @@ class PreferLastRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _PreferLastVisitor(issues, content);
     result.unit.accept(visitor);
@@ -622,7 +653,8 @@ class AvoidLateKeywordRule extends DcmRule {
   String get id => 'avoid-late-keyword';
 
   @override
-  String get description => 'Avoid using late keyword which can lead to runtime errors.';
+  String get description =>
+      'Avoid using late keyword which can lead to runtime errors.';
 
   @override
   String get category => 'common';
@@ -637,7 +669,8 @@ class AvoidLateKeywordRule extends DcmRule {
   List<String> get tags => ['#correctness', '#security'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidLateKeywordVisitor(issues);
     result.unit.accept(visitor);
@@ -656,10 +689,12 @@ class _AvoidLateKeywordVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.lateKeyword!.offset,
         length: node.lateKeyword!.length,
-        message: "Avoid using 'late' keyword. Consider using nullable types or initializing in the constructor.",
+        message:
+            "Avoid using 'late' keyword. Consider using nullable types or initializing in the constructor.",
         severity: DiagnosticSeverity.Information,
         ruleId: 'avoid-late-keyword',
-        suggestion: 'Use nullable type with null check or initialize in constructor',
+        suggestion:
+            'Use nullable type with null check or initialize in constructor',
       ));
     }
     super.visitVariableDeclarationList(node);
@@ -690,7 +725,8 @@ class AvoidRedundantAsyncRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidRedundantAsyncVisitor(issues);
     result.unit.accept(visitor);
@@ -705,24 +741,28 @@ class _AvoidRedundantAsyncVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
-    _checkAsyncFunction(node.functionExpression.body, node.name.offset, node.name.length, node.name.lexeme);
+    _checkAsyncFunction(node.functionExpression.body, node.name.offset,
+        node.name.length, node.name.lexeme);
     super.visitFunctionDeclaration(node);
   }
 
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
-    _checkAsyncFunction(node.body, node.name.offset, node.name.length, node.name.lexeme);
+    _checkAsyncFunction(
+        node.body, node.name.offset, node.name.length, node.name.lexeme);
     super.visitMethodDeclaration(node);
   }
 
-  void _checkAsyncFunction(FunctionBody body, int nameOffset, int nameLength, String name) {
+  void _checkAsyncFunction(
+      FunctionBody body, int nameOffset, int nameLength, String name) {
     if (body.isAsynchronous && !body.isSynchronous) {
       final hasAwait = _containsAwait(body);
       if (!hasAwait) {
         issues.add(DcmIssue(
           offset: nameOffset,
           length: nameLength,
-          message: "Function '$name' is async but does not use await. Consider removing async or using await.",
+          message:
+              "Function '$name' is async but does not use await. Consider removing async or using await.",
           severity: DiagnosticSeverity.Information,
           ruleId: 'avoid-redundant-async',
           suggestion: 'Remove async keyword or add await expression',
@@ -771,7 +811,8 @@ class AvoidUnusedParametersRule extends DcmRule {
   List<String> get tags => ['#maintainability'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidUnusedParametersVisitor(issues);
     result.unit.accept(visitor);
@@ -786,7 +827,8 @@ class _AvoidUnusedParametersVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
-    _checkParameters(node.functionExpression.parameters, node.functionExpression.body);
+    _checkParameters(
+        node.functionExpression.parameters, node.functionExpression.body);
     super.visitFunctionDeclaration(node);
   }
 
@@ -827,7 +869,8 @@ class _AvoidUnusedParametersVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: entry.value.offset,
           length: entry.value.length,
-          message: "Parameter '${entry.key}' is not used. Consider removing it or prefixing with underscore.",
+          message:
+              "Parameter '${entry.key}' is not used. Consider removing it or prefixing with underscore.",
           severity: DiagnosticSeverity.Warning,
           ruleId: 'avoid-unused-parameters',
           suggestion: "Rename to '_${entry.key}' or remove the parameter",
@@ -873,7 +916,8 @@ class DoubleLiteralFormatRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _DoubleLiteralFormatVisitor(issues);
     result.unit.accept(visitor);
@@ -896,7 +940,8 @@ class _DoubleLiteralFormatVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.offset,
         length: node.length,
-        message: 'Add leading zero before decimal point: $fixed instead of $literal',
+        message:
+            'Add leading zero before decimal point: $fixed instead of $literal',
         severity: DiagnosticSeverity.Information,
         ruleId: 'double-literal-format',
         suggestion: 'Use $fixed',
@@ -916,7 +961,8 @@ class _DoubleLiteralFormatVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.offset,
         length: node.length,
-        message: 'Add trailing zero after decimal point: $fixed instead of $literal',
+        message:
+            'Add trailing zero after decimal point: $fixed instead of $literal',
         severity: DiagnosticSeverity.Information,
         ruleId: 'double-literal-format',
         suggestion: 'Use $fixed',
@@ -940,7 +986,8 @@ class PreferImmediateReturnRule extends DcmRule {
   String get id => 'prefer-immediate-return';
 
   @override
-  String get description => 'Prefer returning the expression directly instead of assigning to a variable.';
+  String get description =>
+      'Prefer returning the expression directly instead of assigning to a variable.';
 
   @override
   String get category => 'common';
@@ -958,9 +1005,11 @@ class PreferImmediateReturnRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
-    final visitor = _PreferImmediateReturnVisitor(issues, content, result.lineInfo);
+    final visitor =
+        _PreferImmediateReturnVisitor(issues, content, result.lineInfo);
     result.unit.accept(visitor);
     return issues;
   }
@@ -980,7 +1029,8 @@ class _PreferImmediateReturnVisitor extends RecursiveAstVisitor<void> {
       final secondToLast = statements[statements.length - 2];
       final last = statements.last;
 
-      if (secondToLast is VariableDeclarationStatement && last is ReturnStatement) {
+      if (secondToLast is VariableDeclarationStatement &&
+          last is ReturnStatement) {
         final declarations = secondToLast.variables.variables;
         if (declarations.length == 1) {
           final declaration = declarations.first;
@@ -998,7 +1048,8 @@ class _PreferImmediateReturnVisitor extends RecursiveAstVisitor<void> {
             issues.add(DcmIssue(
               offset: secondToLast.offset,
               length: last.end - secondToLast.offset,
-              message: "Prefer returning the expression directly instead of assigning to '${declaration.name.lexeme}'.",
+              message:
+                  "Prefer returning the expression directly instead of assigning to '${declaration.name.lexeme}'.",
               severity: DiagnosticSeverity.Information,
               ruleId: 'prefer-immediate-return',
               suggestion: 'Return the expression directly',
@@ -1086,8 +1137,7 @@ class _PreferConditionalExpressionsVisitor extends RecursiveAstVisitor<void> {
                 'Prefer using conditional expression instead of if-else for simple assignments.',
             severity: DiagnosticSeverity.Information,
             ruleId: 'prefer-conditional-expressions',
-            suggestion:
-                'Use: $thenTarget = condition ? thenValue : elseValue;',
+            suggestion: 'Use: $thenTarget = condition ? thenValue : elseValue;',
           ));
         }
       }
@@ -1122,8 +1172,7 @@ class NoEqualThenElseRule extends DcmRule {
   String get id => 'no-equal-then-else';
 
   @override
-  String get description =>
-      'Avoid if-else statements with identical branches.';
+  String get description => 'Avoid if-else statements with identical branches.';
 
   @override
   String get category => 'common';
@@ -1230,8 +1279,7 @@ class AvoidUnnecessaryTypeAssertionsRule extends DcmRule {
   }
 }
 
-class _AvoidUnnecessaryTypeAssertionsVisitor
-    extends RecursiveAstVisitor<void> {
+class _AvoidUnnecessaryTypeAssertionsVisitor extends RecursiveAstVisitor<void> {
   _AvoidUnnecessaryTypeAssertionsVisitor(this.issues);
 
   final List<DcmIssue> issues;
@@ -1361,7 +1409,8 @@ class _AvoidUnrelatedTypeAssertionsVisitor extends RecursiveAstVisitor<void> {
 
     if (expressionType != null && testedType != null) {
       // Check for clearly unrelated types (both are concrete and unrelated)
-      if (_areUnrelatedTypes(expressionType.toString(), testedType.toString())) {
+      if (_areUnrelatedTypes(
+          expressionType.toString(), testedType.toString())) {
         final notStr = node.notOperator != null ? '!' : '';
         issues.add(DcmIssue(
           offset: node.offset,
@@ -1445,8 +1494,10 @@ class _BinaryExpressionOperandOrderVisitor extends RecursiveAstVisitor<void> {
     if (op == '==' || op == '!=') {
       // Suggest putting literal on right side (Yoda condition)
       if (node.leftOperand is Literal && node.rightOperand is! Literal) {
-        final leftText = content.substring(node.leftOperand.offset, node.leftOperand.end);
-        final rightText = content.substring(node.rightOperand.offset, node.rightOperand.end);
+        final leftText =
+            content.substring(node.leftOperand.offset, node.leftOperand.end);
+        final rightText =
+            content.substring(node.rightOperand.offset, node.rightOperand.end);
         final replacement = '$rightText $op $leftText';
 
         issues.add(DcmIssue(
@@ -1499,8 +1550,8 @@ class PreferMovingToVariableRule extends DcmRule {
       ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final ruleConfig = config.getRuleConfig(id);
-    final threshold =
-        (ruleConfig['complexity-threshold'] as int?) ?? defaultComplexityThreshold;
+    final threshold = (ruleConfig['complexity-threshold'] as int?) ??
+        defaultComplexityThreshold;
     final visitor = _PreferMovingToVariableVisitor(issues, threshold);
     result.unit.accept(visitor);
     return issues;
@@ -1656,7 +1707,8 @@ class NewlineBeforeReturnRule extends DcmRule {
   List<DcmIssue> analyze(
       ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
-    final visitor = _NewlineBeforeReturnVisitor(issues, result.lineInfo, content);
+    final visitor =
+        _NewlineBeforeReturnVisitor(issues, result.lineInfo, content);
     result.unit.accept(visitor);
     return issues;
   }
@@ -1676,7 +1728,8 @@ class _NewlineBeforeReturnVisitor extends RecursiveAstVisitor<void> {
       if (statements[i] is ReturnStatement) {
         final prevStatement = statements[i - 1];
         final prevLine = lineInfo.getLocation(prevStatement.end).lineNumber;
-        final returnLine = lineInfo.getLocation(statements[i].offset).lineNumber;
+        final returnLine =
+            lineInfo.getLocation(statements[i].offset).lineNumber;
 
         // Check if there's no blank line before return
         if (returnLine - prevLine == 1) {
@@ -1738,7 +1791,8 @@ class PreferCommentingAnalyzerIgnoresRule extends DcmRule {
       final line = lines[i].trim();
       if (line.contains('// ignore:') || line.contains('// ignore_for_file:')) {
         // Check if there's an explanation after the ignore directive
-        final ignoreMatch = RegExp(r'//\s*ignore[_for_file]*:\s*\S+').firstMatch(line);
+        final ignoreMatch =
+            RegExp(r'//\s*ignore[_for_file]*:\s*\S+').firstMatch(line);
         if (ignoreMatch != null) {
           final afterIgnore = line.substring(ignoreMatch.end).trim();
           if (afterIgnore.isEmpty || !afterIgnore.startsWith('//')) {
@@ -1750,7 +1804,8 @@ class PreferCommentingAnalyzerIgnoresRule extends DcmRule {
                   'Add a comment explaining why this analyzer rule is being ignored.',
               severity: DiagnosticSeverity.Information,
               ruleId: 'prefer-commenting-analyzer-ignores',
-              suggestion: 'Add explanation: // ignore: rule_name // reason here',
+              suggestion:
+                  'Add explanation: // ignore: rule_name // reason here',
             ));
           }
         }
@@ -2124,7 +2179,8 @@ class _AvoidPositionalBooleanParametersVisitor
                 "Positional boolean parameter '${param.name?.lexeme}'. Use named parameter for clarity.",
             severity: DiagnosticSeverity.Information,
             ruleId: 'avoid-positional-boolean-parameters',
-            suggestion: 'Change to named parameter: {required bool ${param.name?.lexeme}}',
+            suggestion:
+                'Change to named parameter: {required bool ${param.name?.lexeme}}',
           ));
         }
       }
@@ -2310,7 +2366,8 @@ class _AvoidCollectionMethodsWithUnrelatedTypesVisitor
                     "Calling '${node.methodName.name}' with type '$argTypeName' on collection of '$elementType'. This will always return false/null/-1.",
                 severity: DiagnosticSeverity.Warning,
                 ruleId: 'avoid-collection-methods-with-unrelated-types',
-                suggestion: 'Ensure the argument type matches the collection element type',
+                suggestion:
+                    'Ensure the argument type matches the collection element type',
               ));
             }
           }
@@ -2432,7 +2489,8 @@ class _AvoidCascadeAfterIfNullVisitor extends RecursiveAstVisitor<void> {
               'Cascade after ?? operator may have unexpected behavior. The cascade applies to the right operand, not the full expression.',
           severity: DiagnosticSeverity.Warning,
           ruleId: 'avoid-cascade-after-if-null',
-          suggestion: 'Wrap the ?? expression in parentheses: (a ?? b)..method()',
+          suggestion:
+              'Wrap the ?? expression in parentheses: (a ?? b)..method()',
         ));
       }
     }
@@ -2555,13 +2613,15 @@ class _PreferContainsVisitor extends RecursiveAstVisitor<void> {
             final args = method.argumentList.arguments;
             if (target != null && args.isNotEmpty) {
               final targetText = content.substring(target.offset, target.end);
-              final argText = content.substring(args.first.offset, args.first.end);
+              final argText =
+                  content.substring(args.first.offset, args.first.end);
               final replacement = '$targetText.contains($argText)';
 
               issues.add(DcmIssue(
                 offset: node.offset,
                 length: node.length,
-                message: 'Prefer using contains() instead of indexOf() comparison.',
+                message:
+                    'Prefer using contains() instead of indexOf() comparison.',
                 severity: DiagnosticSeverity.Information,
                 ruleId: 'prefer-contains',
                 suggestion: 'Use .contains(element) instead',
@@ -2592,7 +2652,8 @@ class _PreferContainsVisitor extends RecursiveAstVisitor<void> {
             final args = method.argumentList.arguments;
             if (target != null && args.isNotEmpty) {
               final targetText = content.substring(target.offset, target.end);
-              final argText = content.substring(args.first.offset, args.first.end);
+              final argText =
+                  content.substring(args.first.offset, args.first.end);
               final replacement = '!$targetText.contains($argText)';
 
               issues.add(DcmIssue(
@@ -2705,7 +2766,10 @@ class _PreferIsEmptyVisitor extends RecursiveAstVisitor<void> {
         }
       }
 
-      if (isLengthAccess && isZeroLiteral && suggestion.isNotEmpty && replacement != null) {
+      if (isLengthAccess &&
+          isZeroLiteral &&
+          suggestion.isNotEmpty &&
+          replacement != null) {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
@@ -2849,8 +2913,7 @@ class AvoidAbbreviationsRule extends DcmRule {
   String get id => 'avoid-abbreviations';
 
   @override
-  String get description =>
-      'Avoid unclear abbreviations in identifiers.';
+  String get description => 'Avoid unclear abbreviations in identifiers.';
 
   @override
   String get category => 'common';
@@ -2872,7 +2935,23 @@ class AvoidAbbreviationsRule extends DcmRule {
     final allowedAbbreviations = (ruleConfig['allowed'] as List<dynamic>?)
             ?.map((e) => e.toString().toLowerCase())
             .toSet() ??
-        {'id', 'ui', 'api', 'url', 'uri', 'db', 'io', 'os', 'ip', 'html', 'css', 'json', 'xml', 'http', 'https'};
+        {
+          'id',
+          'ui',
+          'api',
+          'url',
+          'uri',
+          'db',
+          'io',
+          'os',
+          'ip',
+          'html',
+          'css',
+          'json',
+          'xml',
+          'http',
+          'https'
+        };
 
     final visitor = _AvoidAbbreviationsVisitor(issues, allowedAbbreviations);
     result.unit.accept(visitor);
@@ -3025,7 +3104,8 @@ class PreferMatchFileNameRule extends DcmRule {
                   "Class '$className' doesn't match file name. Expected '$expectedClassName' based on file '$fileName'.",
               severity: DiagnosticSeverity.Information,
               ruleId: 'prefer-match-file-name',
-              suggestion: 'Rename class to $expectedClassName or file to match class',
+              suggestion:
+                  'Rename class to $expectedClassName or file to match class',
             ));
           }
           break; // Only check first public class
@@ -3046,49 +3126,49 @@ class PreferMatchFileNameRule extends DcmRule {
 
 /// Get all common rules
 List<DcmRule> getCommonRules() => [
-  // Original rules
-  AvoidDynamicRule(),
-  AvoidNonNullAssertionRule(),
-  AvoidLongFunctionsRule(),
-  AvoidNestedConditionalExpressionsRule(),
-  PreferTrailingCommaRule(),
-  NoEmptyBlockRule(),
-  NoBooleanLiteralCompareRule(),
-  PreferFirstRule(),
-  PreferLastRule(),
-  AvoidLateKeywordRule(),
-  AvoidRedundantAsyncRule(),
-  AvoidUnusedParametersRule(),
-  DoubleLiteralFormatRule(),
-  PreferImmediateReturnRule(),
-  // Expression-related rules
-  PreferConditionalExpressionsRule(),
-  NoEqualThenElseRule(),
-  AvoidUnnecessaryTypeAssertionsRule(),
-  AvoidUnnecessaryTypeCastsRule(),
-  AvoidUnrelatedTypeAssertionsRule(),
-  BinaryExpressionOperandOrderRule(),
-  PreferMovingToVariableRule(),
-  AvoidUnnecessaryNullableRule(),
-  NewlineBeforeReturnRule(),
-  PreferCommentingAnalyzerIgnoresRule(),
-  // Statement-related rules
-  AvoidThrowInCatchBlockRule(),
-  AvoidUnnecessarySettersRule(),
-  AvoidUnnecessaryGettersRule(),
-  PreferSwitchCaseEnumRule(),
-  AvoidPositionalBooleanParametersRule(),
-  AvoidGlobalStateRule(),
-  AvoidDuplicateExportsRule(),
-  // Collection-related rules
-  AvoidCollectionMethodsWithUnrelatedTypesRule(),
-  PreferIterableMethodsRule(),
-  AvoidCascadeAfterIfNullRule(),
-  PreferSpreadCollectionsRule(),
-  PreferContainsRule(),
-  PreferIsEmptyRule(),
-  // Naming and style rules
-  PreferCorrectIdentifierLengthRule(),
-  AvoidAbbreviationsRule(),
-  PreferMatchFileNameRule(),
-];
+      // Original rules
+      AvoidDynamicRule(),
+      AvoidNonNullAssertionRule(),
+      AvoidLongFunctionsRule(),
+      AvoidNestedConditionalExpressionsRule(),
+      PreferTrailingCommaRule(),
+      NoEmptyBlockRule(),
+      NoBooleanLiteralCompareRule(),
+      PreferFirstRule(),
+      PreferLastRule(),
+      AvoidLateKeywordRule(),
+      AvoidRedundantAsyncRule(),
+      AvoidUnusedParametersRule(),
+      DoubleLiteralFormatRule(),
+      PreferImmediateReturnRule(),
+      // Expression-related rules
+      PreferConditionalExpressionsRule(),
+      NoEqualThenElseRule(),
+      AvoidUnnecessaryTypeAssertionsRule(),
+      AvoidUnnecessaryTypeCastsRule(),
+      AvoidUnrelatedTypeAssertionsRule(),
+      BinaryExpressionOperandOrderRule(),
+      PreferMovingToVariableRule(),
+      AvoidUnnecessaryNullableRule(),
+      NewlineBeforeReturnRule(),
+      PreferCommentingAnalyzerIgnoresRule(),
+      // Statement-related rules
+      AvoidThrowInCatchBlockRule(),
+      AvoidUnnecessarySettersRule(),
+      AvoidUnnecessaryGettersRule(),
+      PreferSwitchCaseEnumRule(),
+      AvoidPositionalBooleanParametersRule(),
+      AvoidGlobalStateRule(),
+      AvoidDuplicateExportsRule(),
+      // Collection-related rules
+      AvoidCollectionMethodsWithUnrelatedTypesRule(),
+      PreferIterableMethodsRule(),
+      AvoidCascadeAfterIfNullRule(),
+      PreferSpreadCollectionsRule(),
+      PreferContainsRule(),
+      PreferIsEmptyRule(),
+      // Naming and style rules
+      PreferCorrectIdentifierLengthRule(),
+      AvoidAbbreviationsRule(),
+      PreferMatchFileNameRule(),
+    ];

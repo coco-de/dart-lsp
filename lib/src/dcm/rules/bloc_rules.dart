@@ -380,7 +380,8 @@ class _ProperBlocStateNamingVisitor extends RecursiveAstVisitor<void> {
         final extendsClause = declaration.extendsClause;
         if (extendsClause != null) {
           final superclassName = extendsClause.superclass.name2.lexeme;
-          if (superclassName.endsWith('State') && !className.endsWith('State')) {
+          if (superclassName.endsWith('State') &&
+              !className.endsWith('State')) {
             _stateSubclasses.add(declaration);
           }
         }

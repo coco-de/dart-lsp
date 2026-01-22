@@ -13,6 +13,7 @@ import 'serverpod/serverpod_analyzer.dart';
 import 'jaspr/jaspr_analyzer.dart';
 import 'flutter/flutter_analyzer.dart';
 import 'dcm/dcm_analyzer.dart';
+import 'logger.dart';
 
 /// Main analyzer service that coordinates all analysis features
 class DartAnalyzerService {
@@ -50,7 +51,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Could not find dart via which: $e');
+      Logger.instance.warn('LSP', 'Could not find dart via which: $e');
     }
 
     // Try common SDK locations
@@ -84,7 +85,7 @@ class DartAnalyzerService {
 
     try {
       final sdkPath = _dartSdkPath;
-      stderr.writeln('[Dart LSP] Using SDK path: $sdkPath');
+      Logger.instance.info('LSP', 'Using SDK path: $sdkPath');
 
       _collection = AnalysisContextCollection(
         includedPaths: _workspaces,
@@ -92,9 +93,10 @@ class DartAnalyzerService {
         sdkPath: sdkPath,
       );
     } catch (e, stackTrace) {
-      stderr.writeln('[Dart LSP] Failed to initialize analyzer: $e');
-      stderr.writeln('[Dart LSP] Stack trace: $stackTrace');
-      stderr.writeln('[Dart LSP] Continuing without full analysis support...');
+      Logger.instance
+          .error('LSP', 'Failed to initialize analyzer: $e', stackTrace);
+      Logger.instance
+          .warn('LSP', 'Continuing without full analysis support...');
       _collection = null;
     }
 
@@ -106,7 +108,8 @@ class DartAnalyzerService {
         await _flutterAnalyzer.initialize(workspace);
         await _dcmAnalyzer.initialize(workspace);
       } catch (e) {
-        stderr.writeln('[Dart LSP] Failed to initialize framework analyzers: $e');
+        Logger.instance
+            .error('LSP', 'Failed to initialize framework analyzers: $e');
       }
     }
   }
@@ -157,7 +160,7 @@ class DartAnalyzerService {
             .addAll(await _dcmAnalyzer.analyze(filePath, content, result));
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Analysis error: $e');
+      Logger.instance.error('LSP', 'Analysis error: $e');
     }
 
     return diagnostics;
@@ -204,7 +207,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Completion error: $e');
+      Logger.instance.error('LSP', 'Completion error: $e');
     }
 
     return completions;
@@ -243,7 +246,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Hover error: $e');
+      Logger.instance.error('LSP', 'Hover error: $e');
     }
 
     return null;
@@ -292,7 +295,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Definition error: $e');
+      Logger.instance.error('LSP', 'Definition error: $e');
     }
 
     return null;
@@ -334,7 +337,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Document symbols error: $e');
+      Logger.instance.error('LSP', 'Document symbols error: $e');
     }
 
     return symbols;
@@ -403,7 +406,7 @@ class DartAnalyzerService {
         ];
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Format error: $e');
+      Logger.instance.error('LSP', 'Format error: $e');
     }
 
     return [];
@@ -440,7 +443,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Folding ranges error: $e');
+      Logger.instance.error('LSP', 'Folding ranges error: $e');
     }
 
     return ranges;
@@ -483,7 +486,7 @@ class DartAnalyzerService {
         }
       }
     } catch (e) {
-      stderr.writeln('[Dart LSP] Prepare rename error: $e');
+      Logger.instance.error('LSP', 'Prepare rename error: $e');
     }
 
     return null;

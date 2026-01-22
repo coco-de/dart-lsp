@@ -77,8 +77,7 @@ class _PreferDateFormatVisitor extends RecursiveAstVisitor<void> {
         final parent = node.parent;
         if (parent is InterpolationExpression ||
             parent is ArgumentList ||
-            (parent is BinaryExpression &&
-                parent.operator.lexeme == '+')) {
+            (parent is BinaryExpression && parent.operator.lexeme == '+')) {
           issues.add(DcmIssue(
             offset: node.offset,
             length: node.length,

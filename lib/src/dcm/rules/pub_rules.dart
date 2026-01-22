@@ -242,8 +242,7 @@ class AvoidPathDependenciesRule extends DcmRule {
                 'Path dependencies cannot be used in published packages and may cause issues in CI/CD.',
             severity: DiagnosticSeverity.Warning,
             ruleId: 'avoid-path-dependencies',
-            suggestion:
-                'Use git dependency or publish the package to pub.dev',
+            suggestion: 'Use git dependency or publish the package to pub.dev',
           ));
         }
       }

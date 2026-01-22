@@ -164,7 +164,8 @@ class _IncorrectFirebaseEventNameVisitor extends RecursiveAstVisitor<void> {
 
     // Check format: should be snake_case, alphanumeric and underscores
     if (!_validPattern.hasMatch(eventName)) {
-      String suggestion = 'Use snake_case format with only lowercase letters, numbers, and underscores';
+      String suggestion =
+          'Use snake_case format with only lowercase letters, numbers, and underscores';
 
       // Check specific issues
       if (eventName.contains('-')) {
@@ -173,7 +174,8 @@ class _IncorrectFirebaseEventNameVisitor extends RecursiveAstVisitor<void> {
         suggestion = 'Replace spaces with underscores';
       } else if (eventName != eventName.toLowerCase()) {
         suggestion = 'Convert to lowercase snake_case';
-      } else if (eventName.startsWith('_') || eventName.startsWith(RegExp(r'[0-9]'))) {
+      } else if (eventName.startsWith('_') ||
+          eventName.startsWith(RegExp(r'[0-9]'))) {
         suggestion = 'Event name must start with a lowercase letter';
       }
 

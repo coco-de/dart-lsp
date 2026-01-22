@@ -6,6 +6,7 @@ library dart_lsp;
 
 export 'src/analyzer_service.dart';
 export 'src/document_manager.dart';
+export 'src/logger.dart';
 export 'src/completions/completion_provider.dart';
 export 'src/diagnostics/diagnostic_provider.dart';
 export 'src/navigation/navigation_provider.dart';

@@ -116,8 +116,7 @@ class _AvoidAsyncCallbackInFakeAsyncVisitor extends RecursiveAstVisitor<void> {
               'Async function inside fakeAsync test. Consider using synchronous patterns.',
           severity: DiagnosticSeverity.Warning,
           ruleId: 'avoid-async-callback-in-fake-async',
-          suggestion:
-              'Use synchronous code with flushMicrotasks() or pump()',
+          suggestion: 'Use synchronous code with flushMicrotasks() or pump()',
         ));
       }
     }

@@ -70,7 +70,8 @@ class DcmAnalyzer {
     }
 
     // Try analysis_options.yaml
-    final analysisOptionsFile = File(path.join(workspacePath, 'analysis_options.yaml'));
+    final analysisOptionsFile =
+        File(path.join(workspacePath, 'analysis_options.yaml'));
     if (await analysisOptionsFile.exists()) {
       await _loadAnalysisOptions(analysisOptionsFile);
     }
@@ -96,7 +97,8 @@ class DcmAnalyzer {
       if (yaml == null) return;
 
       // Check for dart_code_metrics or dcm section
-      final dcmSection = yaml['dart_code_metrics'] as YamlMap? ?? yaml['dcm'] as YamlMap?;
+      final dcmSection =
+          yaml['dart_code_metrics'] as YamlMap? ?? yaml['dcm'] as YamlMap?;
       if (dcmSection != null) {
         _config = _parseConfig(dcmSection);
         stderr.writeln('[DCM] Loaded configuration from analysis_options.yaml');
@@ -200,7 +202,8 @@ class DcmAnalyzer {
 
         for (final issue in issues) {
           // Apply severity override from config
-          final overriddenSeverity = _config.getSeverity(rule.id, issue.severity);
+          final overriddenSeverity =
+              _config.getSeverity(rule.id, issue.severity);
           final adjustedIssue = DcmIssue(
             offset: issue.offset,
             length: issue.length,
@@ -228,34 +231,34 @@ class DcmAnalyzer {
   _PackageContext _detectPackageContext(String content) {
     return _PackageContext(
       hasFlutter: content.contains("import 'package:flutter/") ||
-                 content.contains('import "package:flutter/'),
+          content.contains('import "package:flutter/'),
       hasBloc: content.contains("import 'package:flutter_bloc/") ||
-               content.contains('import "package:flutter_bloc/') ||
-               content.contains("import 'package:bloc/") ||
-               content.contains('import "package:bloc/'),
+          content.contains('import "package:flutter_bloc/') ||
+          content.contains("import 'package:bloc/") ||
+          content.contains('import "package:bloc/'),
       hasProvider: content.contains("import 'package:provider/") ||
-                   content.contains('import "package:provider/'),
+          content.contains('import "package:provider/'),
       hasRiverpod: content.contains("import 'package:flutter_riverpod/") ||
-                   content.contains('import "package:flutter_riverpod/') ||
-                   content.contains("import 'package:riverpod/") ||
-                   content.contains('import "package:riverpod/') ||
-                   content.contains("import 'package:hooks_riverpod/") ||
-                   content.contains('import "package:hooks_riverpod/'),
+          content.contains('import "package:flutter_riverpod/') ||
+          content.contains("import 'package:riverpod/") ||
+          content.contains('import "package:riverpod/') ||
+          content.contains("import 'package:hooks_riverpod/") ||
+          content.contains('import "package:hooks_riverpod/'),
       hasEquatable: content.contains("import 'package:equatable/") ||
-                    content.contains('import "package:equatable/'),
+          content.contains('import "package:equatable/'),
       hasIntl: content.contains("import 'package:intl/") ||
-               content.contains('import "package:intl/'),
+          content.contains('import "package:intl/'),
       hasFirebase: content.contains("import 'package:firebase") ||
-                   content.contains('import "package:firebase'),
+          content.contains('import "package:firebase'),
       hasGetIt: content.contains("import 'package:get_it/") ||
-                content.contains('import "package:get_it/'),
+          content.contains('import "package:get_it/'),
       hasFakeAsync: content.contains("import 'package:fake_async/") ||
-                    content.contains('import "package:fake_async/') ||
-                    content.contains('fakeAsync('),
+          content.contains('import "package:fake_async/') ||
+          content.contains('fakeAsync('),
       isTestFile: content.contains("import 'package:test/") ||
-                  content.contains('import "package:test/') ||
-                  content.contains("import 'package:flutter_test/") ||
-                  content.contains('import "package:flutter_test/'),
+          content.contains('import "package:test/') ||
+          content.contains("import 'package:flutter_test/") ||
+          content.contains('import "package:flutter_test/'),
     );
   }
 
@@ -292,9 +295,9 @@ class DcmAnalyzer {
   bool _isFlutterFile(String filePath) {
     // Simple heuristic for Flutter files
     return filePath.contains('lib/') ||
-           filePath.endsWith('_widget.dart') ||
-           filePath.endsWith('_screen.dart') ||
-           filePath.endsWith('_page.dart');
+        filePath.endsWith('_widget.dart') ||
+        filePath.endsWith('_screen.dart') ||
+        filePath.endsWith('_page.dart');
   }
 
   /// Get rule by ID
@@ -388,7 +391,9 @@ class DcmAnalyzer {
           kind: CodeActionKind.QuickFix,
           diagnostics: [diagnostic],
           edit: WorkspaceEdit(
-            changes: {uri: [ignoreEdit]},
+            changes: {
+              uri: [ignoreEdit]
+            },
           ),
         ));
       }
@@ -442,7 +447,8 @@ class DcmAnalyzer {
     );
 
     // Detect indentation
-    final indent = lineContent.substring(0, lineContent.indexOf(lineContent.trimLeft()));
+    final indent =
+        lineContent.substring(0, lineContent.indexOf(lineContent.trimLeft()));
 
     return TextEdit(
       range: Range(

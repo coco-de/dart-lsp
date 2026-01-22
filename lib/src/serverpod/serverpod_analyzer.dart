@@ -211,10 +211,10 @@ if (userId == null) {
       if (!params.trim().startsWith('Session')) {
         diagnostics.add(Diagnostic(
           range: Range(
-            start:
-                Position(line: _getLineNumber(content, match.start), character: 0),
-            end:
-                Position(line: _getLineNumber(content, match.start), character: 100),
+            start: Position(
+                line: _getLineNumber(content, match.start), character: 0),
+            end: Position(
+                line: _getLineNumber(content, match.start), character: 100),
           ),
           message: 'Endpoint methods should have Session as first parameter',
           severity: DiagnosticSeverity.Warning,

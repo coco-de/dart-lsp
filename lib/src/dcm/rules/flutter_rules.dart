@@ -12,7 +12,8 @@ class AvoidReturningWidgetsRule extends DcmRule {
   String get id => 'avoid-returning-widgets';
 
   @override
-  String get description => 'Avoid returning widgets from methods. Extract them into separate widget classes.';
+  String get description =>
+      'Avoid returning widgets from methods. Extract them into separate widget classes.';
 
   @override
   String get category => 'flutter';
@@ -27,7 +28,8 @@ class AvoidReturningWidgetsRule extends DcmRule {
   List<String> get tags => ['#performance', '#maintainability'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidReturningWidgetsVisitor(issues);
     result.unit.accept(visitor);
@@ -53,7 +55,8 @@ class _AvoidReturningWidgetsVisitor extends RecursiveAstVisitor<void> {
       issues.add(DcmIssue(
         offset: node.name.offset,
         length: node.name.length,
-        message: "Avoid returning widgets from methods. Consider extracting '${node.name.lexeme}' into a separate widget class.",
+        message:
+            "Avoid returning widgets from methods. Consider extracting '${node.name.lexeme}' into a separate widget class.",
         severity: DiagnosticSeverity.Warning,
         ruleId: 'avoid-returning-widgets',
         suggestion: 'Extract into a separate StatelessWidget or StatefulWidget',
@@ -77,7 +80,8 @@ class AvoidUnnecessarySetstateRule extends DcmRule {
   String get id => 'avoid-unnecessary-setstate';
 
   @override
-  String get description => 'Avoid unnecessary setState calls that do not change state.';
+  String get description =>
+      'Avoid unnecessary setState calls that do not change state.';
 
   @override
   String get category => 'flutter';
@@ -92,7 +96,8 @@ class AvoidUnnecessarySetstateRule extends DcmRule {
   List<String> get tags => ['#performance'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidUnnecessarySetstateVisitor(issues);
     result.unit.accept(visitor);
@@ -129,7 +134,8 @@ class _AvoidUnnecessarySetstateVisitor extends RecursiveAstVisitor<void> {
             issues.add(DcmIssue(
               offset: node.offset,
               length: node.length,
-              message: 'Empty setState callback. Remove this setState call as it causes unnecessary rebuilds.',
+              message:
+                  'Empty setState callback. Remove this setState call as it causes unnecessary rebuilds.',
               severity: DiagnosticSeverity.Warning,
               ruleId: 'avoid-unnecessary-setstate',
               suggestion: 'Remove the empty setState call',
@@ -160,7 +166,8 @@ class DisposeFieldsRule extends DcmRule {
   String get id => 'dispose-fields';
 
   @override
-  String get description => 'Dispose all disposable fields in the dispose method.';
+  String get description =>
+      'Dispose all disposable fields in the dispose method.';
 
   @override
   String get category => 'flutter';
@@ -175,7 +182,8 @@ class DisposeFieldsRule extends DcmRule {
   List<String> get tags => ['#correctness', '#performance'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _DisposeFieldsVisitor(issues);
     result.unit.accept(visitor);
@@ -238,7 +246,8 @@ class _DisposeFieldsVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: entry.value.offset,
           length: entry.value.length,
-          message: "Field '${entry.key}' should be disposed. Add a dispose() method.",
+          message:
+              "Field '${entry.key}' should be disposed. Add a dispose() method.",
           severity: DiagnosticSeverity.Warning,
           ruleId: 'dispose-fields',
           suggestion: 'Add dispose() method and call ${entry.key}.dispose()',
@@ -254,10 +263,12 @@ class _DisposeFieldsVisitor extends RecursiveAstVisitor<void> {
           issues.add(DcmIssue(
             offset: entry.value.offset,
             length: entry.value.length,
-            message: "Field '${entry.key}' is not disposed in dispose() method.",
+            message:
+                "Field '${entry.key}' is not disposed in dispose() method.",
             severity: DiagnosticSeverity.Warning,
             ruleId: 'dispose-fields',
-            suggestion: 'Add ${entry.key}.dispose() or ${entry.key}.cancel() to dispose()',
+            suggestion:
+                'Add ${entry.key}.dispose() or ${entry.key}.cancel() to dispose()',
           ));
         }
       }
@@ -275,7 +286,9 @@ class _DisposeCallFinder extends RecursiveAstVisitor<void> {
   @override
   void visitMethodInvocation(MethodInvocation node) {
     final methodName = node.methodName.name;
-    if (methodName == 'dispose' || methodName == 'cancel' || methodName == 'close') {
+    if (methodName == 'dispose' ||
+        methodName == 'cancel' ||
+        methodName == 'close') {
       final target = node.target;
       if (target is SimpleIdentifier) {
         disposedFields.add(target.name);
@@ -291,7 +304,8 @@ class PreferSingleChildColumnOrRowRule extends DcmRule {
   String get id => 'prefer-single-child-column-or-row';
 
   @override
-  String get description => 'Prefer using Align or Center instead of Column/Row with single child.';
+  String get description =>
+      'Prefer using Align or Center instead of Column/Row with single child.';
 
   @override
   String get category => 'flutter';
@@ -309,7 +323,8 @@ class PreferSingleChildColumnOrRowRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _PreferSingleChildVisitor(issues);
     result.unit.accept(visitor);
@@ -328,13 +343,15 @@ class _PreferSingleChildVisitor extends RecursiveAstVisitor<void> {
     if (constructorName == 'Column' || constructorName == 'Row') {
       // Find children argument
       for (final argument in node.argumentList.arguments) {
-        if (argument is NamedExpression && argument.name.label.name == 'children') {
+        if (argument is NamedExpression &&
+            argument.name.label.name == 'children') {
           final value = argument.expression;
           if (value is ListLiteral && value.elements.length == 1) {
             issues.add(DcmIssue(
               offset: node.offset,
               length: node.constructorName.length,
-              message: '$constructorName with single child is inefficient. Consider using Align, Center, or the child widget directly.',
+              message:
+                  '$constructorName with single child is inefficient. Consider using Align, Center, or the child widget directly.',
               severity: DiagnosticSeverity.Information,
               ruleId: 'prefer-single-child-column-or-row',
               suggestion: 'Replace $constructorName with Align or Center',
@@ -353,7 +370,8 @@ class AvoidShrinkWrapInListsRule extends DcmRule {
   String get id => 'avoid-shrink-wrap-in-lists';
 
   @override
-  String get description => 'Avoid using shrinkWrap in ListView, GridView, etc. for performance.';
+  String get description =>
+      'Avoid using shrinkWrap in ListView, GridView, etc. for performance.';
 
   @override
   String get category => 'flutter';
@@ -368,7 +386,8 @@ class AvoidShrinkWrapInListsRule extends DcmRule {
   List<String> get tags => ['#performance'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidShrinkWrapVisitor(issues);
     result.unit.accept(visitor);
@@ -379,7 +398,11 @@ class AvoidShrinkWrapInListsRule extends DcmRule {
 class _AvoidShrinkWrapVisitor extends RecursiveAstVisitor<void> {
   _AvoidShrinkWrapVisitor(this.issues);
 
-  static const _scrollableWidgets = {'ListView', 'GridView', 'CustomScrollView'};
+  static const _scrollableWidgets = {
+    'ListView',
+    'GridView',
+    'CustomScrollView'
+  };
 
   final List<DcmIssue> issues;
 
@@ -395,7 +418,8 @@ class _AvoidShrinkWrapVisitor extends RecursiveAstVisitor<void> {
           issues.add(DcmIssue(
             offset: argument.offset,
             length: argument.length,
-            message: 'Avoid using shrinkWrap: true in $constructorName. It disables lazy loading and can cause performance issues.',
+            message:
+                'Avoid using shrinkWrap: true in $constructorName. It disables lazy loading and can cause performance issues.',
             severity: DiagnosticSeverity.Warning,
             ruleId: 'avoid-shrink-wrap-in-lists',
             suggestion: 'Use a fixed-height container or slivers instead',
@@ -431,7 +455,8 @@ class PreferConstBorderRadiusRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _PreferConstBorderRadiusVisitor(issues, content);
     result.unit.accept(visitor);
@@ -454,7 +479,8 @@ class _PreferConstBorderRadiusVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: 'BorderRadius can be const. Add const keyword for better performance.',
+          message:
+              'BorderRadius can be const. Add const keyword for better performance.',
           severity: DiagnosticSeverity.Information,
           ruleId: 'prefer-const-border-radius',
           suggestion: 'Add const keyword before BorderRadius',
@@ -489,7 +515,10 @@ class _PreferConstBorderRadiusVisitor extends RecursiveAstVisitor<void> {
   }
 
   bool _isConstExpression(Expression expr) {
-    if (expr is IntegerLiteral || expr is DoubleLiteral || expr is BooleanLiteral || expr is NullLiteral) {
+    if (expr is IntegerLiteral ||
+        expr is DoubleLiteral ||
+        expr is BooleanLiteral ||
+        expr is NullLiteral) {
       return true;
     }
     if (expr is InstanceCreationExpression && expr.isConst) {
@@ -527,7 +556,8 @@ class AvoidExpandedAsSpacerRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidExpandedAsSpacerVisitor(issues);
     result.unit.accept(visitor);
@@ -545,7 +575,8 @@ class _AvoidExpandedAsSpacerVisitor extends RecursiveAstVisitor<void> {
     final constructorName = node.constructorName.type.name2.lexeme;
     if (constructorName == 'Expanded' || constructorName == 'Flexible') {
       for (final argument in node.argumentList.arguments) {
-        if (argument is NamedExpression && argument.name.label.name == 'child') {
+        if (argument is NamedExpression &&
+            argument.name.label.name == 'child') {
           final child = argument.expression;
           if (child is InstanceCreationExpression) {
             final childName = child.constructorName.type.name2.lexeme;
@@ -555,7 +586,8 @@ class _AvoidExpandedAsSpacerVisitor extends RecursiveAstVisitor<void> {
                 issues.add(DcmIssue(
                   offset: node.offset,
                   length: node.length,
-                  message: 'Use Spacer instead of $constructorName with empty $childName.',
+                  message:
+                      'Use Spacer instead of $constructorName with empty $childName.',
                   severity: DiagnosticSeverity.Information,
                   ruleId: 'avoid-expanded-as-spacer',
                   suggestion: 'Replace with Spacer()',
@@ -596,7 +628,8 @@ class AvoidBorderAllRule extends DcmRule {
   String get id => 'avoid-border-all';
 
   @override
-  String get description => 'Consider using const Border instead of Border.all for better performance.';
+  String get description =>
+      'Consider using const Border instead of Border.all for better performance.';
 
   @override
   String get category => 'flutter';
@@ -611,7 +644,8 @@ class AvoidBorderAllRule extends DcmRule {
   List<String> get tags => ['#performance'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _AvoidBorderAllVisitor(issues);
     result.unit.accept(visitor);
@@ -632,7 +666,8 @@ class _AvoidBorderAllVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: 'Consider using const Border.fromBorderSide for better performance when all sides are the same.',
+          message:
+              'Consider using const Border.fromBorderSide for better performance when all sides are the same.',
           severity: DiagnosticSeverity.Information,
           ruleId: 'avoid-border-all',
           suggestion: 'Use const Border.fromBorderSide(BorderSide(...))',
@@ -649,7 +684,8 @@ class PreferDedicatedMediaQueryMethodsRule extends DcmRule {
   String get id => 'prefer-dedicated-media-query-methods';
 
   @override
-  String get description => 'Prefer dedicated MediaQuery methods like MediaQuery.sizeOf(context).';
+  String get description =>
+      'Prefer dedicated MediaQuery methods like MediaQuery.sizeOf(context).';
 
   @override
   String get category => 'flutter';
@@ -667,7 +703,8 @@ class PreferDedicatedMediaQueryMethodsRule extends DcmRule {
   bool get hasAutoFix => true;
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _PreferDedicatedMediaQueryVisitor(issues, content);
     result.unit.accept(visitor);
@@ -713,7 +750,8 @@ class _PreferDedicatedMediaQueryVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: 'Prefer using MediaQuery.$dedicatedMethod(context) instead of MediaQuery.of(context).$property for better performance.',
+          message:
+              'Prefer using MediaQuery.$dedicatedMethod(context) instead of MediaQuery.of(context).$property for better performance.',
           severity: DiagnosticSeverity.Information,
           ruleId: 'prefer-dedicated-media-query-methods',
           suggestion: 'Replace with MediaQuery.$dedicatedMethod(context)',
@@ -737,7 +775,8 @@ class PreferExtractingCallbacksRule extends DcmRule {
   String get id => 'prefer-extracting-callbacks';
 
   @override
-  String get description => 'Extract callback functions instead of using inline closures in widget trees.';
+  String get description =>
+      'Extract callback functions instead of using inline closures in widget trees.';
 
   @override
   String get category => 'flutter';
@@ -752,7 +791,8 @@ class PreferExtractingCallbacksRule extends DcmRule {
   List<String> get tags => ['#performance', '#readability'];
 
   @override
-  List<DcmIssue> analyze(ResolvedUnitResult result, String content, DcmConfig config) {
+  List<DcmIssue> analyze(
+      ResolvedUnitResult result, String content, DcmConfig config) {
     final issues = <DcmIssue>[];
     final visitor = _PreferExtractingCallbacksVisitor(issues, result.lineInfo);
     result.unit.accept(visitor);
@@ -764,9 +804,19 @@ class _PreferExtractingCallbacksVisitor extends RecursiveAstVisitor<void> {
   _PreferExtractingCallbacksVisitor(this.issues, this.lineInfo);
 
   static const _callbackArguments = {
-    'onPressed', 'onTap', 'onLongPress', 'onChanged', 'onSubmitted',
-    'onSaved', 'onEditingComplete', 'onFocusChange', 'onHighlightChanged',
-    'onHover', 'onKey', 'onSelected', 'onExpansionChanged',
+    'onPressed',
+    'onTap',
+    'onLongPress',
+    'onChanged',
+    'onSubmitted',
+    'onSaved',
+    'onEditingComplete',
+    'onFocusChange',
+    'onHighlightChanged',
+    'onHover',
+    'onKey',
+    'onSelected',
+    'onExpansionChanged',
   };
 
   final List<DcmIssue> issues;
@@ -789,7 +839,8 @@ class _PreferExtractingCallbacksVisitor extends RecursiveAstVisitor<void> {
           issues.add(DcmIssue(
             offset: node.offset,
             length: node.length,
-            message: 'Consider extracting this callback to a separate method for better readability and performance.',
+            message:
+                'Consider extracting this callback to a separate method for better readability and performance.',
             severity: DiagnosticSeverity.Information,
             ruleId: 'prefer-extracting-callbacks',
             suggestion: 'Extract to a named method in the class',
@@ -961,7 +1012,8 @@ class AvoidUnnecessaryStatefulWidgetsRule extends DcmRule {
   }
 }
 
-class _AvoidUnnecessaryStatefulWidgetsVisitor extends RecursiveAstVisitor<void> {
+class _AvoidUnnecessaryStatefulWidgetsVisitor
+    extends RecursiveAstVisitor<void> {
   _AvoidUnnecessaryStatefulWidgetsVisitor(this.issues);
 
   final List<DcmIssue> issues;
@@ -1371,7 +1423,8 @@ class _PreferConstConstructorsVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: '$constructorName can be const. Add const for better performance.',
+          message:
+              '$constructorName can be const. Add const for better performance.',
           severity: DiagnosticSeverity.Information,
           ruleId: 'prefer-const-constructors',
           suggestion: 'Add const keyword before $constructorName',
@@ -1580,7 +1633,8 @@ class _PreferSizedBoxShrinkExpandVisitor extends RecursiveAstVisitor<void> {
         issues.add(DcmIssue(
           offset: node.offset,
           length: node.length,
-          message: 'Use SizedBox.shrink() instead of SizedBox(width: 0, height: 0).',
+          message:
+              'Use SizedBox.shrink() instead of SizedBox(width: 0, height: 0).',
           severity: DiagnosticSeverity.Information,
           ruleId: 'prefer-sized-box-shrink-expand',
           suggestion: 'Replace with SizedBox.shrink()',
@@ -1609,7 +1663,9 @@ class _PreferSizedBoxShrinkExpandVisitor extends RecursiveAstVisitor<void> {
             DcmFix(
               offset: node.offset,
               length: node.length,
-              replacement: hasChild ? 'SizedBox.expand(child: /* existing child */)' : 'const SizedBox.expand()',
+              replacement: hasChild
+                  ? 'SizedBox.expand(child: /* existing child */)'
+                  : 'const SizedBox.expand()',
             ),
           ],
         ));
@@ -1726,10 +1782,7 @@ class _PreferCorrectEdgeInsetsConstructorVisitor
         ));
       }
       // Check for .symmetric pattern
-      else if (left != null &&
-          left == right &&
-          top != null &&
-          top == bottom) {
+      else if (left != null && left == right && top != null && top == bottom) {
         if (left == 0 && top != 0) {
           issues.add(DcmIssue(
             offset: node.offset,
@@ -2073,12 +2126,13 @@ class _AvoidSetStateInBuildVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    if (_isInBuildMethod && !_isInCallback && node.methodName.name == 'setState') {
+    if (_isInBuildMethod &&
+        !_isInCallback &&
+        node.methodName.name == 'setState') {
       issues.add(DcmIssue(
         offset: node.offset,
         length: node.length,
-        message:
-            'Calling setState in build method causes infinite rebuilds.',
+        message: 'Calling setState in build method causes infinite rebuilds.',
         severity: DiagnosticSeverity.Error,
         ruleId: 'avoid-setstate-in-build',
         suggestion: 'Move setState call to a callback or lifecycle method',
@@ -2211,7 +2265,8 @@ class _AvoidWrappingInPaddingVisitor extends RecursiveAstVisitor<void> {
     if (constructorName == 'Padding') {
       // Check what the child is
       for (final argument in node.argumentList.arguments) {
-        if (argument is NamedExpression && argument.name.label.name == 'child') {
+        if (argument is NamedExpression &&
+            argument.name.label.name == 'child') {
           final child = argument.expression;
           if (child is InstanceCreationExpression) {
             final childName = child.constructorName.type.name2.lexeme;
@@ -2331,8 +2386,7 @@ class _CheckForEqualsInRenderObjectSettersVisitor
             "Setter '${node.name.lexeme}' calls markNeeds* without equality check. This may cause unnecessary rebuilds.",
         severity: DiagnosticSeverity.Warning,
         ruleId: 'check-for-equals-in-render-object-setters',
-        suggestion:
-            'Add "if (_field == value) return;" before assignment',
+        suggestion: 'Add "if (_field == value) return;" before assignment',
       ));
     }
 
@@ -2538,7 +2592,8 @@ class _PreferNullAwareMethodCallsVisitor extends RecursiveAstVisitor<void> {
                   expr.argumentList.offset,
                   expr.argumentList.end,
                 );
-                final replacement = '$varName?.${expr.methodName.name}$argsText;';
+                final replacement =
+                    '$varName?.${expr.methodName.name}$argsText;';
 
                 issues.add(DcmIssue(
                   offset: node.offset,
@@ -2619,7 +2674,8 @@ class _AvoidUsingExpandedOnScrollableVisitor extends RecursiveAstVisitor<void> {
 
     if (constructorName == 'Expanded' || constructorName == 'Flexible') {
       for (final argument in node.argumentList.arguments) {
-        if (argument is NamedExpression && argument.name.label.name == 'child') {
+        if (argument is NamedExpression &&
+            argument.name.label.name == 'child') {
           final child = argument.expression;
           if (child is InstanceCreationExpression) {
             final childName = child.constructorName.type.name2.lexeme;

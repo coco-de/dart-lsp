@@ -7,7 +7,7 @@ import 'package:yaml/yaml.dart';
 /// Jaspr-specific analyzer for web components and SSR
 class JasprAnalyzer {
   bool _isJasprProject = false;
-  
+
   /// Initialize the Jaspr analyzer for a workspace
   Future<void> initialize(String workspacePath) async {
     // Check if this is a Jaspr project
@@ -15,7 +15,7 @@ class JasprAnalyzer {
     if (await pubspecFile.exists()) {
       final content = await pubspecFile.readAsString();
       final pubspec = loadYaml(content) as YamlMap?;
-      
+
       if (pubspec != null) {
         final dependencies = pubspec['dependencies'] as YamlMap?;
         if (dependencies != null && dependencies.containsKey('jaspr')) {
@@ -24,16 +24,16 @@ class JasprAnalyzer {
       }
     }
   }
-  
+
   /// Check if file is a Jaspr file
   bool isJasprFile(String filePath) {
     if (!_isJasprProject) return false;
-    
+
     return filePath.contains('_web') ||
-           filePath.contains('components') ||
-           filePath.contains('pages');
+        filePath.contains('components') ||
+        filePath.contains('pages');
   }
-  
+
   /// Analyze Jaspr-specific code
   Future<List<Diagnostic>> analyze(
     String filePath,
@@ -41,23 +41,23 @@ class JasprAnalyzer {
     ResolvedUnitResult result,
   ) async {
     final diagnostics = <Diagnostic>[];
-    
+
     if (!_isJasprProject) return diagnostics;
-    
+
     // Check for common Jaspr issues
-    
+
     // 1. Check component structure
     diagnostics.addAll(_checkComponentStructure(content, result));
-    
+
     // 2. Check build method
     diagnostics.addAll(_checkBuildMethod(content, result));
-    
+
     // 3. Check state management
     diagnostics.addAll(_checkStateManagement(content, result));
-    
+
     return diagnostics;
   }
-  
+
   /// Get Jaspr-specific completions
   Future<List<CompletionItem>> getCompletions(
     String filePath,
@@ -65,11 +65,11 @@ class JasprAnalyzer {
     ResolvedUnitResult result,
   ) async {
     final completions = <CompletionItem>[];
-    
+
     if (!_isJasprProject) return completions;
-    
+
     // Add Jaspr-specific completions
-    
+
     // 1. StatelessComponent template
     completions.add(CompletionItem(
       label: 'jaspr-stateless',
@@ -92,7 +92,7 @@ class \${1:MyComponent} extends StatelessComponent {
         value: 'Creates a new Jaspr StatelessComponent.',
       )),
     ));
-    
+
     // 2. StatefulComponent template
     completions.add(CompletionItem(
       label: 'jaspr-stateful',
@@ -122,7 +122,7 @@ class \${1:MyComponent}State extends State<\${1:MyComponent}> {
         value: 'Creates a new Jaspr StatefulComponent with State class.',
       )),
     ));
-    
+
     // 3. HTML elements
     final htmlElements = [
       ('div', 'Division element'),
@@ -144,7 +144,7 @@ class \${1:MyComponent}State extends State<\${1:MyComponent}> {
       ('td', 'Table cell'),
       ('th', 'Table header cell'),
     ];
-    
+
     for (final (element, description) in htmlElements) {
       completions.add(CompletionItem(
         label: element,
@@ -158,7 +158,7 @@ class \${1:MyComponent}State extends State<\${1:MyComponent}> {
         )),
       ));
     }
-    
+
     // 4. Event handlers
     completions.add(CompletionItem(
       label: 'onClick',
@@ -167,7 +167,7 @@ class \${1:MyComponent}State extends State<\${1:MyComponent}> {
       insertText: 'onClick: () {\n  \${1:// Handle click}\n  \${0}\n}',
       detail: 'Jaspr onClick handler',
     ));
-    
+
     completions.add(CompletionItem(
       label: 'onInput',
       kind: CompletionItemKind.Snippet,
@@ -175,7 +175,7 @@ class \${1:MyComponent}State extends State<\${1:MyComponent}> {
       insertText: 'onInput: (value) {\n  \${1:// Handle input}\n  \${0}\n}',
       detail: 'Jaspr onInput handler',
     ));
-    
+
     // 5. CSS styling
     completions.add(CompletionItem(
       label: 'jaspr-css',
@@ -195,7 +195,7 @@ final styles = [
         value: 'Creates Jaspr CSS styles using the @css annotation.',
       )),
     ));
-    
+
     // 6. Route definition
     completions.add(CompletionItem(
       label: 'jaspr-route',
@@ -219,7 +219,7 @@ class \${2:PageName}Page extends StatelessComponent {
         value: 'Creates a new Jaspr page with route annotation.',
       )),
     ));
-    
+
     // 7. Text element
     completions.add(CompletionItem(
       label: 'text',
@@ -228,15 +228,16 @@ class \${2:PageName}Page extends StatelessComponent {
       insertText: 'text(\'\${1:content}\')',
       detail: 'Jaspr text content',
     ));
-    
+
     return completions;
   }
-  
+
   // Helper methods
-  
-  List<Diagnostic> _checkComponentStructure(String content, ResolvedUnitResult result) {
+
+  List<Diagnostic> _checkComponentStructure(
+      String content, ResolvedUnitResult result) {
     final diagnostics = <Diagnostic>[];
-    
+
     // Check that StatelessComponent has const constructor
     if (content.contains('extends StatelessComponent') &&
         !content.contains('const ')) {
@@ -247,8 +248,10 @@ class \${2:PageName}Page extends StatelessComponent {
         final offset = classMatch.start;
         diagnostics.add(Diagnostic(
           range: Range(
-            start: Position(line: _getLineNumber(content, offset), character: 0),
-            end: Position(line: _getLineNumber(content, offset), character: 100),
+            start:
+                Position(line: _getLineNumber(content, offset), character: 0),
+            end:
+                Position(line: _getLineNumber(content, offset), character: 100),
           ),
           message: 'Consider using const constructor for StatelessComponent',
           severity: DiagnosticSeverity.Information,
@@ -257,25 +260,29 @@ class \${2:PageName}Page extends StatelessComponent {
         ));
       }
     }
-    
+
     return diagnostics;
   }
-  
-  List<Diagnostic> _checkBuildMethod(String content, ResolvedUnitResult result) {
+
+  List<Diagnostic> _checkBuildMethod(
+      String content, ResolvedUnitResult result) {
     final diagnostics = <Diagnostic>[];
-    
+
     // Check that build method uses sync*
     if (content.contains('extends StatelessComponent') ||
         content.contains('extends State<')) {
       if (content.contains('Iterable<Component> build') &&
           !content.contains('sync*')) {
-        final buildMatch = RegExp(r'Iterable<Component>\s+build').firstMatch(content);
+        final buildMatch =
+            RegExp(r'Iterable<Component>\s+build').firstMatch(content);
         if (buildMatch != null) {
           final offset = buildMatch.start;
           diagnostics.add(Diagnostic(
             range: Range(
-              start: Position(line: _getLineNumber(content, offset), character: 0),
-              end: Position(line: _getLineNumber(content, offset), character: 100),
+              start:
+                  Position(line: _getLineNumber(content, offset), character: 0),
+              end: Position(
+                  line: _getLineNumber(content, offset), character: 100),
             ),
             message: 'Build method should use sync* for generator syntax',
             severity: DiagnosticSeverity.Warning,
@@ -285,22 +292,22 @@ class \${2:PageName}Page extends StatelessComponent {
         }
       }
     }
-    
+
     return diagnostics;
   }
-  
-  List<Diagnostic> _checkStateManagement(String content, ResolvedUnitResult result) {
+
+  List<Diagnostic> _checkStateManagement(
+      String content, ResolvedUnitResult result) {
     final diagnostics = <Diagnostic>[];
-    
+
     // Check for setState usage in StatefulComponent
-    if (content.contains('extends State<') &&
-        content.contains('setState')) {
+    if (content.contains('extends State<') && content.contains('setState')) {
       // This is fine, just checking the pattern
     }
-    
+
     return diagnostics;
   }
-  
+
   int _getLineNumber(String content, int offset) {
     return content.substring(0, offset).split('\n').length - 1;
   }

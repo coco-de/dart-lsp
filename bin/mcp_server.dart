@@ -4,8 +4,11 @@ import 'dart:io';
 
 import 'package:dart_lsp/dart_lsp.dart';
 
+/// Logger shorthand
+final _log = Logger.instance;
+
 /// MCP Server for Dart LSP Integration with Claude Code
-/// 
+///
 /// This server wraps the Dart LSP functionality and exposes it
 /// through the Model Context Protocol (MCP) for Claude Code integration.
 void main(List<String> args) async {
@@ -20,69 +23,70 @@ class DartMcpServer {
   final Map<String, Completer<Map<String, dynamic>>> _pendingRequests = {};
 
   final List<String> _workspaces = [];
-  
+
   /// Run the MCP server
   Future<void> run() async {
-    stderr.writeln('[Dart MCP] Starting server...');
-    
+    _log.info('MCP', 'Starting server...');
+
     // Read from stdin, write to stdout (MCP protocol)
     stdin.transform(utf8.decoder).transform(const LineSplitter()).listen(
-      _handleInput,
-      onError: (e) => stderr.writeln('[Dart MCP] Input error: $e'),
-      onDone: () => stderr.writeln('[Dart MCP] Input closed'),
-    );
-    
+          _handleInput,
+          onError: (e) => _log.error('MCP', 'Input error: $e'),
+          onDone: () => _log.info('MCP', 'Input closed'),
+        );
+
     // Keep the server running
     await ProcessSignal.sigint.watch().first;
-    stderr.writeln('[Dart MCP] Shutting down...');
+    _log.info('MCP', 'Shutting down...');
   }
-  
+
   /// Handle incoming JSON-RPC messages
   void _handleInput(String line) async {
     if (line.isEmpty) return;
-    
+
     try {
       final message = jsonDecode(line) as Map<String, dynamic>;
-      
+
       if (message.containsKey('method')) {
         // It's a request or notification
         await _handleRequest(message);
-      } else if (message.containsKey('result') || message.containsKey('error')) {
+      } else if (message.containsKey('result') ||
+          message.containsKey('error')) {
         // It's a response
         _handleResponse(message);
       }
     } catch (e, st) {
-      stderr.writeln('[Dart MCP] Parse error: $e\n$st');
+      _log.error('MCP', 'Parse error: $e', st);
     }
   }
-  
+
   /// Handle a JSON-RPC request
   Future<void> _handleRequest(Map<String, dynamic> message) async {
     final method = message['method'] as String;
     final id = message['id'];
     final params = message['params'] as Map<String, dynamic>? ?? {};
-    
+
     try {
       final result = await _dispatch(method, params);
-      
+
       if (id != null) {
         _sendResponse(id, result);
       }
     } catch (e, st) {
-      stderr.writeln('[Dart MCP] Error handling $method: $e\n$st');
-      
+      _log.error('MCP', 'Error handling $method: $e', st);
+
       if (id != null) {
         _sendError(id, -32603, e.toString());
       }
     }
   }
-  
+
   /// Handle a JSON-RPC response
   void _handleResponse(Map<String, dynamic> message) {
     final id = message['id']?.toString();
     if (id != null && _pendingRequests.containsKey(id)) {
       final completer = _pendingRequests.remove(id)!;
-      
+
       if (message.containsKey('error')) {
         completer.completeError(message['error']);
       } else {
@@ -90,7 +94,7 @@ class DartMcpServer {
       }
     }
   }
-  
+
   /// Dispatch method calls
   Future<dynamic> _dispatch(String method, Map<String, dynamic> params) async {
     switch (method) {
@@ -101,26 +105,27 @@ class DartMcpServer {
         return _handleInitialized(params);
       case 'shutdown':
         return _handleShutdown();
-      
+
       // MCP Tools
       case 'tools/list':
         return _listTools();
       case 'tools/call':
         return _callTool(params);
-      
+
       // MCP Resources (for file watching)
       case 'resources/list':
         return _listResources();
       case 'resources/read':
         return _readResource(params);
-      
+
       default:
         throw Exception('Unknown method: $method');
     }
   }
-  
+
   /// Handle initialize request
-  Future<Map<String, dynamic>> _handleInitialize(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _handleInitialize(
+      Map<String, dynamic> params) async {
     // capabilities can be used for future feature negotiation
     // final capabilities = params['capabilities'] as Map<String, dynamic>? ?? {};
 
@@ -138,7 +143,7 @@ class DartMcpServer {
         }
       }
     }
-    
+
     // Or from rootUri
     if (_workspaces.isEmpty && params.containsKey('rootUri')) {
       final rootUri = params['rootUri'] as String;
@@ -146,7 +151,7 @@ class DartMcpServer {
       _workspaces.add(path);
       await _analyzerService.addWorkspace(path);
     }
-    
+
     return {
       'protocolVersion': '2024-11-05',
       'capabilities': {
@@ -164,27 +169,28 @@ class DartMcpServer {
       },
     };
   }
-  
+
   /// Handle initialized notification
   Future<void> _handleInitialized(Map<String, dynamic> params) async {
     // Server is now fully initialized
-    stderr.writeln('[Dart MCP] Server initialized with workspaces: $_workspaces');
+    _log.info('MCP', 'Server initialized with workspaces: $_workspaces');
   }
-  
+
   /// Handle shutdown request
   Future<void> _handleShutdown() async {
     await _analyzerService.dispose();
-    stderr.writeln('[Dart MCP] Server shutdown');
+    _log.info('MCP', 'Server shutdown');
   }
-  
+
   /// List available tools
   Map<String, dynamic> _listTools() {
     return {
       'tools': [
         {
           'name': 'dart_analyze',
-          'description': 'Analyze Dart code and return diagnostics (errors, warnings, hints). '
-              'Use this before writing code to check for issues.',
+          'description':
+              'Analyze Dart code and return diagnostics (errors, warnings, hints). '
+                  'Use this before writing code to check for issues.',
           'inputSchema': {
             'type': 'object',
             'properties': {
@@ -229,7 +235,8 @@ class DartMcpServer {
         },
         {
           'name': 'dart_hover',
-          'description': 'Get hover information (documentation, type info) at a position.',
+          'description':
+              'Get hover information (documentation, type info) at a position.',
           'inputSchema': {
             'type': 'object',
             'properties': {
@@ -281,7 +288,8 @@ class DartMcpServer {
         },
         {
           'name': 'dart_format',
-          'description': 'Format Dart code according to the official style guide.',
+          'description':
+              'Format Dart code according to the official style guide.',
           'inputSchema': {
             'type': 'object',
             'properties': {
@@ -299,7 +307,8 @@ class DartMcpServer {
         },
         {
           'name': 'dart_symbols',
-          'description': 'Get document symbols (classes, functions, variables) for outline.',
+          'description':
+              'Get document symbols (classes, functions, variables) for outline.',
           'inputSchema': {
             'type': 'object',
             'properties': {
@@ -317,7 +326,8 @@ class DartMcpServer {
         },
         {
           'name': 'dart_code_actions',
-          'description': 'Get available code actions (quick fixes, refactorings) for a range.',
+          'description':
+              'Get available code actions (quick fixes, refactorings) for a range.',
           'inputSchema': {
             'type': 'object',
             'properties': {
@@ -346,7 +356,14 @@ class DartMcpServer {
                 'description': 'End character (0-indexed)',
               },
             },
-            'required': ['uri', 'content', 'startLine', 'startCharacter', 'endLine', 'endCharacter'],
+            'required': [
+              'uri',
+              'content',
+              'startLine',
+              'startCharacter',
+              'endLine',
+              'endCharacter'
+            ],
           },
         },
         {
@@ -363,15 +380,48 @@ class DartMcpServer {
             'required': ['path'],
           },
         },
+        {
+          'name': 'dart_logs',
+          'description': 'View server logs for debugging and monitoring. '
+              'Filter by level, source, time range, or search term.',
+          'inputSchema': {
+            'type': 'object',
+            'properties': {
+              'level': {
+                'type': 'string',
+                'description':
+                    'Minimum log level (debug, info, warning, error)',
+                'default': 'info',
+              },
+              'source': {
+                'type': 'string',
+                'description': 'Filter by source (MCP, LSP, DCM, etc.)',
+              },
+              'limit': {
+                'type': 'integer',
+                'description': 'Maximum number of logs to return',
+                'default': 50,
+              },
+              'since_minutes': {
+                'type': 'integer',
+                'description': 'Only show logs from the last N minutes',
+              },
+              'search': {
+                'type': 'string',
+                'description': 'Search term to filter log messages',
+              },
+            },
+          },
+        },
       ],
     };
   }
-  
+
   /// Call a tool
   Future<Map<String, dynamic>> _callTool(Map<String, dynamic> params) async {
     final name = params['name'] as String;
     final arguments = params['arguments'] as Map<String, dynamic>? ?? {};
-    
+
     switch (name) {
       case 'dart_analyze':
         return _toolAnalyze(arguments);
@@ -389,19 +439,21 @@ class DartMcpServer {
         return _toolCodeActions(arguments);
       case 'dart_add_workspace':
         return _toolAddWorkspace(arguments);
+      case 'dart_logs':
+        return _toolLogs(arguments);
       default:
         throw Exception('Unknown tool: $name');
     }
   }
-  
+
   /// Tool: Analyze code
   Future<Map<String, dynamic>> _toolAnalyze(Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
-    
+
     _documentManager.openDocument(uri, content);
     final diagnostics = await _analyzerService.analyze(uri, content);
-    
+
     final result = diagnostics.map((d) {
       // Extract code value from Either<int, String> or use toString
       final codeValue = d.code?.toString();
@@ -409,19 +461,22 @@ class DartMcpServer {
         'severity': _severityToString(d.severity),
         'message': d.message,
         'range': {
-          'start': {'line': d.range.start.line, 'character': d.range.start.character},
+          'start': {
+            'line': d.range.start.line,
+            'character': d.range.start.character
+          },
           'end': {'line': d.range.end.line, 'character': d.range.end.character},
         },
         'code': codeValue,
         'source': d.source,
       };
     }).toList();
-    
+
     return {
       'content': [
         {
           'type': 'text',
-          'text': result.isEmpty 
+          'text': result.isEmpty
               ? '✅ No issues found'
               : '🔍 Found ${result.length} issue(s):\n\n${_formatDiagnostics(result)}',
         },
@@ -429,24 +484,28 @@ class DartMcpServer {
       'isError': result.any((d) => d['severity'] == 'error'),
     };
   }
-  
+
   /// Tool: Get completions
   Future<Map<String, dynamic>> _toolComplete(Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
     final line = args['line'] as int;
     final character = args['character'] as int;
-    
+
     _documentManager.openDocument(uri, content);
-    final completions = await _analyzerService.getCompletions(uri, content, line, character);
-    
-    final result = completions.take(20).map((c) => {
-      'label': c.label,
-      'kind': _completionKindToString(c.kind),
-      'detail': c.detail,
-      'insertText': c.insertText ?? c.label,
-    }).toList();
-    
+    final completions =
+        await _analyzerService.getCompletions(uri, content, line, character);
+
+    final result = completions
+        .take(20)
+        .map((c) => {
+              'label': c.label,
+              'kind': _completionKindToString(c.kind),
+              'detail': c.detail,
+              'insertText': c.insertText ?? c.label,
+            })
+        .toList();
+
     return {
       'content': [
         {
@@ -458,17 +517,18 @@ class DartMcpServer {
       ],
     };
   }
-  
+
   /// Tool: Get hover info
   Future<Map<String, dynamic>> _toolHover(Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
     final line = args['line'] as int;
     final character = args['character'] as int;
-    
+
     _documentManager.openDocument(uri, content);
-    final hover = await _analyzerService.getHover(uri, content, line, character);
-    
+    final hover =
+        await _analyzerService.getHover(uri, content, line, character);
+
     if (hover == null) {
       return {
         'content': [
@@ -476,7 +536,7 @@ class DartMcpServer {
         ],
       };
     }
-    
+
     // Extract hover content - contents is Either<List<MarkedString>, MarkupContent>
     final hoverContent = hover.contents.toString();
 
@@ -486,17 +546,19 @@ class DartMcpServer {
       ],
     };
   }
-  
+
   /// Tool: Get definition
-  Future<Map<String, dynamic>> _toolDefinition(Map<String, dynamic> args) async {
+  Future<Map<String, dynamic>> _toolDefinition(
+      Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
     final line = args['line'] as int;
     final character = args['character'] as int;
-    
+
     _documentManager.openDocument(uri, content);
-    final definition = await _analyzerService.getDefinition(uri, content, line, character);
-    
+    final definition =
+        await _analyzerService.getDefinition(uri, content, line, character);
+
     if (definition == null) {
       return {
         'content': [
@@ -504,7 +566,7 @@ class DartMcpServer {
         ],
       };
     }
-    
+
     return {
       'content': [
         {
@@ -517,15 +579,15 @@ class DartMcpServer {
       ],
     };
   }
-  
+
   /// Tool: Format code
   Future<Map<String, dynamic>> _toolFormat(Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
-    
+
     _documentManager.openDocument(uri, content);
     final edits = await _analyzerService.formatDocument(uri, content);
-    
+
     if (edits.isEmpty) {
       return {
         'content': [
@@ -533,32 +595,37 @@ class DartMcpServer {
         ],
       };
     }
-    
+
     // Apply edits to get formatted content
     String formattedContent = content;
     for (final edit in edits.reversed) {
-      final startOffset = _getOffset(content, edit.range.start.line, edit.range.start.character);
-      final endOffset = _getOffset(content, edit.range.end.line, edit.range.end.character);
+      final startOffset = _getOffset(
+          content, edit.range.start.line, edit.range.start.character);
+      final endOffset =
+          _getOffset(content, edit.range.end.line, edit.range.end.character);
       formattedContent = formattedContent.substring(0, startOffset) +
           edit.newText +
           formattedContent.substring(endOffset);
     }
-    
+
     return {
       'content': [
-        {'type': 'text', 'text': '✨ Formatted code:\n\n```dart\n$formattedContent\n```'},
+        {
+          'type': 'text',
+          'text': '✨ Formatted code:\n\n```dart\n$formattedContent\n```'
+        },
       ],
     };
   }
-  
+
   /// Tool: Get symbols
   Future<Map<String, dynamic>> _toolSymbols(Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
-    
+
     _documentManager.openDocument(uri, content);
     final symbols = await _analyzerService.getDocumentSymbols(uri, content);
-    
+
     if (symbols.isEmpty) {
       return {
         'content': [
@@ -566,7 +633,7 @@ class DartMcpServer {
         ],
       };
     }
-    
+
     return {
       'content': [
         {
@@ -576,17 +643,18 @@ class DartMcpServer {
       ],
     };
   }
-  
+
   /// Tool: Get code actions
-  Future<Map<String, dynamic>> _toolCodeActions(Map<String, dynamic> args) async {
+  Future<Map<String, dynamic>> _toolCodeActions(
+      Map<String, dynamic> args) async {
     final uri = args['uri'] as String;
     final content = args['content'] as String;
-    
+
     _documentManager.openDocument(uri, content);
-    
+
     // First analyze to get diagnostics
     final diagnostics = await _analyzerService.analyze(uri, content);
-    
+
     // Then get code actions
     final range = _createRange(
       args['startLine'] as int,
@@ -594,9 +662,10 @@ class DartMcpServer {
       args['endLine'] as int,
       args['endCharacter'] as int,
     );
-    
-    final actions = await _analyzerService.getCodeActions(uri, content, range, diagnostics);
-    
+
+    final actions =
+        await _analyzerService.getCodeActions(uri, content, range, diagnostics);
+
     if (actions.isEmpty) {
       return {
         'content': [
@@ -604,7 +673,7 @@ class DartMcpServer {
         ],
       };
     }
-    
+
     // CodeAction list - extract title from each action
     final result = actions.map((a) {
       // a is Either<Command, CodeAction> - use toString or extract title
@@ -616,51 +685,99 @@ class DartMcpServer {
       'content': [
         {
           'type': 'text',
-          'text': '🔧 Available actions:\n\n${result.map((a) => '- ${a['title']}').join('\n')}',
+          'text':
+              '🔧 Available actions:\n\n${result.map((a) => '- ${a['title']}').join('\n')}',
         },
       ],
     };
   }
-  
+
   /// Tool: Add workspace
-  Future<Map<String, dynamic>> _toolAddWorkspace(Map<String, dynamic> args) async {
+  Future<Map<String, dynamic>> _toolAddWorkspace(
+      Map<String, dynamic> args) async {
     final path = args['path'] as String;
-    
+
     if (!_workspaces.contains(path)) {
       _workspaces.add(path);
       await _analyzerService.addWorkspace(path);
     }
-    
+
     return {
       'content': [
         {'type': 'text', 'text': '✅ Added workspace: $path'},
       ],
     };
   }
-  
+
+  /// Tool: Get logs
+  Map<String, dynamic> _toolLogs(Map<String, dynamic> args) {
+    final levelStr = args['level'] as String? ?? 'info';
+    final source = args['source'] as String?;
+    final limit = args['limit'] as int? ?? 50;
+    final sinceMinutes = args['since_minutes'] as int?;
+    final search = args['search'] as String?;
+
+    final level = LogLevel.fromString(levelStr);
+    final since = sinceMinutes != null ? Duration(minutes: sinceMinutes) : null;
+
+    final entries = _log.store.query(
+      minLevel: level,
+      source: source,
+      limit: limit,
+      since: since,
+      search: search,
+    );
+
+    if (entries.isEmpty) {
+      return {
+        'content': [
+          {'type': 'text', 'text': '📋 No logs found matching criteria'},
+        ],
+      };
+    }
+
+    return {
+      'content': [
+        {
+          'type': 'text',
+          'text': '📋 Logs (${entries.length} entries):\n\n'
+              '${_formatLogs(entries)}',
+        },
+      ],
+    };
+  }
+
+  /// Format log entries for display
+  String _formatLogs(List<LogEntry> entries) {
+    return entries.map((e) => e.format()).join('\n');
+  }
+
   /// List resources (for file watching)
   Map<String, dynamic> _listResources() {
     return {
-      'resources': _workspaces.map((w) => {
-        'uri': 'file://$w',
-        'name': w.split('/').last,
-        'mimeType': 'application/x-directory',
-      }).toList(),
+      'resources': _workspaces
+          .map((w) => {
+                'uri': 'file://$w',
+                'name': w.split('/').last,
+                'mimeType': 'application/x-directory',
+              })
+          .toList(),
     };
   }
-  
+
   /// Read a resource
-  Future<Map<String, dynamic>> _readResource(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _readResource(
+      Map<String, dynamic> params) async {
     final uri = params['uri'] as String;
     final path = Uri.parse(uri).toFilePath();
-    
+
     final file = File(path);
     if (!await file.exists()) {
       throw Exception('File not found: $path');
     }
-    
+
     final content = await file.readAsString();
-    
+
     return {
       'contents': [
         {
@@ -671,9 +788,9 @@ class DartMcpServer {
       ],
     };
   }
-  
+
   // Helper methods
-  
+
   void _sendResponse(dynamic id, dynamic result) {
     final response = jsonEncode({
       'jsonrpc': '2.0',
@@ -682,7 +799,7 @@ class DartMcpServer {
     });
     stdout.writeln(response);
   }
-  
+
   void _sendError(dynamic id, int code, String message) {
     final response = jsonEncode({
       'jsonrpc': '2.0',
@@ -694,7 +811,7 @@ class DartMcpServer {
     });
     stdout.writeln(response);
   }
-  
+
   // Reserved for future use - sending notifications to client
   // void _sendNotification(String method, Map<String, dynamic> params) {
   //   final notification = jsonEncode({
@@ -704,7 +821,7 @@ class DartMcpServer {
   //   });
   //   stdout.writeln(notification);
   // }
-  
+
   String _severityToString(dynamic severity) {
     final name = severity.toString().toLowerCase();
     if (name.contains('error')) return 'error';
@@ -712,7 +829,7 @@ class DartMcpServer {
     if (name.contains('info')) return 'info';
     return 'hint';
   }
-  
+
   String _completionKindToString(dynamic kind) {
     if (kind == null) return 'text';
     final name = kind.toString().toLowerCase();
@@ -723,11 +840,12 @@ class DartMcpServer {
     if (name.contains('snippet')) return 'snippet';
     return 'text';
   }
-  
+
   String _formatDiagnostics(List<Map<String, dynamic>> diagnostics) {
     return diagnostics.map((d) {
       final severity = d['severity'] as String?;
-      final icon = severity == 'error' ? '❌' : (severity == 'warning' ? '⚠️' : 'ℹ️');
+      final icon =
+          severity == 'error' ? '❌' : (severity == 'warning' ? '⚠️' : 'ℹ️');
       final range = d['range'] as Map<String, dynamic>;
       final start = range['start'] as Map<String, dynamic>;
       final line = (start['line'] as int) + 1;
@@ -735,18 +853,23 @@ class DartMcpServer {
       return '$icon Line $line:$col - ${d['message']}';
     }).join('\n');
   }
-  
+
   String _formatCompletions(List<Map<String, dynamic>> completions) {
     return completions.map((c) {
       final kind = c['kind'];
-      final icon = kind == 'class' ? '📦' : 
-                   kind == 'function' ? '🔹' :
-                   kind == 'variable' ? '📎' :
-                   kind == 'property' ? '🔸' : '•';
+      final icon = kind == 'class'
+          ? '📦'
+          : kind == 'function'
+              ? '🔹'
+              : kind == 'variable'
+                  ? '📎'
+                  : kind == 'property'
+                      ? '🔸'
+                      : '•';
       return '$icon ${c['label']}${c['detail'] != null ? ' - ${c['detail']}' : ''}';
     }).join('\n');
   }
-  
+
   // ignore: avoid_dynamic_calls - DocumentSymbol from LSP uses dynamic properties
   String _formatSymbols(List<dynamic> symbols, int indent) {
     final prefix = '  ' * indent;
@@ -767,7 +890,7 @@ class DartMcpServer {
       return result;
     }).join('\n');
   }
-  
+
   int _getOffset(String content, int line, int character) {
     final lines = content.split('\n');
     var offset = 0;
@@ -778,7 +901,7 @@ class DartMcpServer {
     // Clamp to content length to avoid RangeError
     return result > content.length ? content.length : result;
   }
-  
+
   dynamic _createRange(int startLine, int startChar, int endLine, int endChar) {
     // This would need to import lsp_server types
     // For now, returning a map that can be converted

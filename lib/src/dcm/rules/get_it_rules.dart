@@ -36,7 +36,8 @@ class AvoidGettingUnregisteredServicesRule extends DcmRule {
   }
 }
 
-class _AvoidGettingUnregisteredServicesVisitor extends RecursiveAstVisitor<void> {
+class _AvoidGettingUnregisteredServicesVisitor
+    extends RecursiveAstVisitor<void> {
   _AvoidGettingUnregisteredServicesVisitor(this.issues);
 
   final List<DcmIssue> issues;
