@@ -175,6 +175,14 @@ class DcmConfig {
         'avoid-getting-unregistered-services',
         // FakeAsync rules
         'avoid-async-callback-in-fake-async',
+        // Rules found in kobic project lint audit (Epic #2607)
+        'avoid-unsafe-collection-methods',
+        'avoid-nullable-interpolation',
+        'avoid-shadowing',
+        'avoid-commented-out-code',
+        'prefer-shorthands-with-constructors',
+        'prefer-shorthands-with-static-fields',
+        'use-closest-build-context',
         // Extended Flutter rules
         'always-remove-listener',
         'avoid-unnecessary-stateful-widgets',
