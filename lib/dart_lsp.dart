@@ -14,3 +14,4 @@ export 'src/formatting/formatting_provider.dart';
 export 'src/serverpod/serverpod_analyzer.dart';
 export 'src/jaspr/jaspr_analyzer.dart';
 export 'src/flutter/flutter_analyzer.dart';
+export 'src/dcm/dcm_cli_analyzer.dart';

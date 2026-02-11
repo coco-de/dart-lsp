@@ -13,6 +13,7 @@ import 'serverpod/serverpod_analyzer.dart';
 import 'jaspr/jaspr_analyzer.dart';
 import 'flutter/flutter_analyzer.dart';
 import 'dcm/dcm_analyzer.dart';
+import 'dcm/dcm_cli_analyzer.dart';
 import 'logger.dart';
 
 /// Main analyzer service that coordinates all analysis features
@@ -24,6 +25,7 @@ class DartAnalyzerService {
   final JasprAnalyzer _jasprAnalyzer = JasprAnalyzer();
   final FlutterAnalyzer _flutterAnalyzer = FlutterAnalyzer();
   final DcmAnalyzer _dcmAnalyzer = DcmAnalyzer();
+  final DcmCliAnalyzer _dcmCliAnalyzer = DcmCliAnalyzer();
   final DartFormatter _formatter =
       DartFormatter(languageVersion: DartFormatter.latestLanguageVersion);
 
@@ -100,6 +102,9 @@ class DartAnalyzerService {
       _collection = null;
     }
 
+    // Initialize DCM CLI analyzer (find binary once)
+    await _dcmCliAnalyzer.initialize();
+
     // Initialize framework-specific analyzers
     for (final workspace in _workspaces) {
       try {
@@ -107,6 +112,11 @@ class DartAnalyzerService {
         await _jasprAnalyzer.initialize(workspace);
         await _flutterAnalyzer.initialize(workspace);
         await _dcmAnalyzer.initialize(workspace);
+
+        // Run DCM CLI analysis on workspace if available
+        if (_dcmCliAnalyzer.isAvailable) {
+          await _dcmCliAnalyzer.analyzeWorkspace(workspace);
+        }
       } catch (e) {
         Logger.instance
             .error('LSP', 'Failed to initialize framework analyzers: $e');
@@ -155,15 +165,31 @@ class DartAnalyzerService {
               await _flutterAnalyzer.analyze(filePath, content, result));
         }
 
-        // Add DCM diagnostics
-        diagnostics
-            .addAll(await _dcmAnalyzer.analyze(filePath, content, result));
+        // Add DCM diagnostics: prefer CLI results, fallback to custom
+        if (_dcmCliAnalyzer.isAvailable) {
+          final workspace = _findWorkspaceFor(filePath);
+          if (workspace != null) {
+            diagnostics
+                .addAll(_dcmCliAnalyzer.getDiagnostics(workspace, filePath));
+          }
+        } else {
+          diagnostics
+              .addAll(await _dcmAnalyzer.analyze(filePath, content, result));
+        }
       }
     } catch (e) {
       Logger.instance.error('LSP', 'Analysis error: $e');
     }
 
     return diagnostics;
+  }
+
+  /// Find the workspace that contains the given file path
+  String? _findWorkspaceFor(String filePath) {
+    for (final ws in _workspaces) {
+      if (filePath.startsWith(ws)) return ws;
+    }
+    return null;
   }
 
   /// Get completions at a position
