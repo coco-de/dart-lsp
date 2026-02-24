@@ -53,6 +53,46 @@ Dart 공식 스타일 가이드에 따라 코드를 포맷합니다.
 새 프로젝트를 열 때 먼저 워크스페이스를 추가하세요.
 ```
 
+### dart_pub
+Dart/Flutter 패키지 관리 명령을 실행합니다.
+```
+의존성 추가, 업데이트, 제거 등 패키지 관리를 직접 처리할 때 사용하세요.
+```
+
+**파라미터**:
+| 이름 | 타입 | 설명 | 기본값 |
+|------|------|------|--------|
+| path | string | 프로젝트 디렉토리 경로 (필수) | - |
+| command | string | pub 명령 (get/upgrade/outdated/add/remove) (필수) | - |
+| package | string | 패키지 이름 (add/remove 시 필수) | - |
+| dev | boolean | dev 의존성으로 추가 (add 시) | false |
+
+### dart_test
+Dart/Flutter 테스트를 실행합니다.
+```
+코드 작성 후 테스트를 돌려 정상 동작을 검증할 때 사용하세요.
+```
+
+**파라미터**:
+| 이름 | 타입 | 설명 | 기본값 |
+|------|------|------|--------|
+| path | string | 프로젝트 디렉토리 또는 테스트 파일 경로 (필수) | - |
+| name | string | 테스트 이름 필터 (정규식) | - |
+| reporter | string | 출력 형식 (json/compact/expanded) | json |
+| coverage | boolean | 코드 커버리지 수집 | false |
+
+### dart_flutter_outline
+Flutter 위젯 트리 아웃라인을 가져옵니다.
+```
+복잡한 위젯 트리 구조를 이해하거나 리팩토링할 때 사용하세요.
+```
+
+**파라미터**:
+| 이름 | 타입 | 설명 | 기본값 |
+|------|------|------|--------|
+| uri | string | 파일 URI (file:///path/to/file.dart) (필수) | - |
+| content | string | 파일 내용 (필수) | - |
+
 ### dart_logs
 서버 실행 중 발생한 로그를 조회합니다.
 ```
@@ -72,15 +112,24 @@ Dart 공식 스타일 가이드에 따라 코드를 포맷합니다.
 
 ### 코드 작성 시
 1. **먼저 워크스페이스 추가**: `dart_add_workspace`로 프로젝트 경로 등록
-2. **코드 작성 중**: `dart_complete`로 정확한 API 확인
-3. **작성 후**: `dart_analyze`로 에러 체크
-4. **완료 시**: `dart_format`으로 포맷팅
+2. **의존성 관리**: `dart_pub`로 필요한 패키지 추가/업데이트
+3. **코드 작성 중**: `dart_complete`로 정확한 API 확인
+4. **작성 후**: `dart_analyze`로 에러 체크
+5. **테스트**: `dart_test`로 테스트 실행 및 결과 확인
+6. **완료 시**: `dart_format`으로 포맷팅
 
 ### 기존 코드 수정 시
 1. `dart_symbols`로 파일 구조 파악
 2. `dart_hover`로 기존 코드 이해
 3. 수정 후 `dart_analyze`로 검증
-4. `dart_code_actions`로 추가 개선 확인
+4. `dart_test`로 관련 테스트 실행
+5. `dart_code_actions`로 추가 개선 확인
+
+### Flutter 위젯 리팩토링 시
+1. `dart_flutter_outline`로 위젯 트리 구조 파악
+2. `dart_symbols`로 전체 파일 구조 확인
+3. 리팩토링 후 `dart_analyze`로 검증
+4. `dart_test`로 위젯 테스트 실행
 
 ## 🎯 프레임워크별 지원
 
@@ -107,4 +156,5 @@ Dart 공식 스타일 가이드에 따라 코드를 포맷합니다.
 1. **Dart 코드 작성 전** 항상 `dart_add_workspace`로 프로젝트 등록
 2. **코드 수정 후** 반드시 `dart_analyze` 실행하여 에러 확인
 3. **API 불확실 시** `dart_complete`나 `dart_hover`로 확인
-4. **최종 저장 전** `dart_format`으로 코드 정리
+4. **테스트 가능 시** `dart_test`로 테스트 실행하여 검증
+5. **최종 저장 전** `dart_format`으로 코드 정리

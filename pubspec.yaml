@@ -4,12 +4,12 @@ version: 0.1.0
 publish_to: none
 
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.10.3
 
 dependencies:
   lsp_server: ^0.4.0
-  analyzer: ^7.3.0
-  dart_style: ^3.0.0
+  analyzer: ^10.2.0
+  dart_style: ^3.1.5
   path: ^1.8.3
   yaml: ^3.1.2
   args: ^2.4.2
@@ -17,5 +17,5 @@ dependencies:
   watcher: ^1.1.0
 
 dev_dependencies:
-  test: ^1.24.0
-  lints: ^3.0.0
+  test: ^1.29.0
+  lints: ^6.1.0

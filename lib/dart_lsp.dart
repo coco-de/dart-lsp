@@ -2,11 +2,12 @@
 ///
 /// A custom Language Server Protocol implementation for Dart
 /// with enhanced support for Serverpod, Jaspr, and Flutter.
-library dart_lsp;
+library;
 
 export 'src/analyzer_service.dart';
 export 'src/document_manager.dart';
 export 'src/logger.dart';
+export 'src/mcp_helpers.dart';
 export 'src/completions/completion_provider.dart';
 export 'src/diagnostics/diagnostic_provider.dart';
 export 'src/navigation/navigation_provider.dart';

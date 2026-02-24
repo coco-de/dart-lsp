@@ -67,7 +67,7 @@ class _AvoidReturningWidgetsVisitor extends RecursiveAstVisitor<void> {
 
   bool _isWidgetType(TypeAnnotation type) {
     if (type is NamedType) {
-      final name = type.name2.lexeme;
+      final name = type.name.lexeme;
       return name == 'Widget' || name.endsWith('Widget');
     }
     return false;
@@ -115,7 +115,7 @@ class _AvoidUnnecessarySetstateVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInStateClass = superclassName.startsWith('State');
     }
     super.visitClassDeclaration(node);
@@ -204,7 +204,7 @@ class _DisposeFieldsVisitor extends RecursiveAstVisitor<void> {
       return;
     }
 
-    final superclassName = extendsClause.superclass.name2.lexeme;
+    final superclassName = extendsClause.superclass.name.lexeme;
     if (!superclassName.startsWith('State')) {
       super.visitClassDeclaration(node);
       return;
@@ -212,11 +212,11 @@ class _DisposeFieldsVisitor extends RecursiveAstVisitor<void> {
 
     // Find all disposable fields
     final disposableFields = <String, FieldDeclaration>{};
-    for (final member in node.members) {
+    for (final member in (node.body as BlockClassBody).members) {
       if (member is FieldDeclaration) {
         final typeAnnotation = member.fields.type;
         if (typeAnnotation is NamedType) {
-          final typeName = typeAnnotation.name2.lexeme;
+          final typeName = typeAnnotation.name.lexeme;
           if (DisposeFieldsRule._disposableTypes.contains(typeName)) {
             for (final variable in member.fields.variables) {
               disposableFields[variable.name.lexeme] = member;
@@ -233,7 +233,7 @@ class _DisposeFieldsVisitor extends RecursiveAstVisitor<void> {
 
     // Find dispose method
     MethodDeclaration? disposeMethod;
-    for (final member in node.members) {
+    for (final member in (node.body as BlockClassBody).members) {
       if (member is MethodDeclaration && member.name.lexeme == 'dispose') {
         disposeMethod = member;
         break;
@@ -339,7 +339,7 @@ class _PreferSingleChildVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     if (constructorName == 'Column' || constructorName == 'Row') {
       // Find children argument
       for (final argument in node.argumentList.arguments) {
@@ -408,7 +408,7 @@ class _AvoidShrinkWrapVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     if (_scrollableWidgets.contains(constructorName)) {
       for (final argument in node.argumentList.arguments) {
         if (argument is NamedExpression &&
@@ -472,7 +472,7 @@ class _PreferConstBorderRadiusVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     if (constructorName == 'BorderRadius') {
       if (!node.isConst && _canBeConst(node)) {
         final nodeText = content.substring(node.offset, node.end);
@@ -572,14 +572,14 @@ class _AvoidExpandedAsSpacerVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     if (constructorName == 'Expanded' || constructorName == 'Flexible') {
       for (final argument in node.argumentList.arguments) {
         if (argument is NamedExpression &&
             argument.name.label.name == 'child') {
           final child = argument.expression;
           if (child is InstanceCreationExpression) {
-            final childName = child.constructorName.type.name2.lexeme;
+            final childName = child.constructorName.type.name.lexeme;
             if (childName == 'SizedBox' || childName == 'Container') {
               // Check if child is essentially empty
               if (_isEmptyWidget(child)) {
@@ -900,7 +900,7 @@ class _AlwaysRemoveListenerVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInStateClass = superclassName.startsWith('State');
     }
 
@@ -1026,7 +1026,7 @@ class _AvoidUnnecessaryStatefulWidgetsVisitor
       return;
     }
 
-    final superclassName = extendsClause.superclass.name2.lexeme;
+    final superclassName = extendsClause.superclass.name.lexeme;
     if (!superclassName.startsWith('State')) {
       super.visitClassDeclaration(node);
       return;
@@ -1040,7 +1040,7 @@ class _AvoidUnnecessaryStatefulWidgetsVisitor
     bool hasDidChangeDependencies = false;
     bool hasDidUpdateWidget = false;
 
-    for (final member in node.members) {
+    for (final member in (node.body as BlockClassBody).members) {
       if (member is FieldDeclaration && !member.isStatic) {
         // Check if field is not final
         if (!member.fields.isFinal) {
@@ -1071,10 +1071,10 @@ class _AvoidUnnecessaryStatefulWidgetsVisitor
         !hasDidChangeDependencies &&
         !hasDidUpdateWidget) {
       issues.add(DcmIssue(
-        offset: node.name.offset,
-        length: node.name.length,
+        offset: node.namePart.typeName.offset,
+        length: node.namePart.typeName.length,
         message:
-            "State class '${node.name.lexeme}' has no mutable state. Consider using StatelessWidget.",
+            "State class '${node.namePart.typeName.lexeme}' has no mutable state. Consider using StatelessWidget.",
         severity: DiagnosticSeverity.Information,
         ruleId: 'avoid-unnecessary-stateful-widgets',
         suggestion: 'Convert to StatelessWidget',
@@ -1137,7 +1137,7 @@ class _AvoidRecursiveWidgetCallsVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    _currentClassName = node.name.lexeme;
+    _currentClassName = node.namePart.typeName.lexeme;
     super.visitClassDeclaration(node);
     _currentClassName = null;
   }
@@ -1153,7 +1153,7 @@ class _AvoidRecursiveWidgetCallsVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     if (_isInBuildMethod && _currentClassName != null) {
-      final createdTypeName = node.constructorName.type.name2.lexeme;
+      final createdTypeName = node.constructorName.type.name.lexeme;
       if (createdTypeName == _currentClassName) {
         issues.add(DcmIssue(
           offset: node.offset,
@@ -1212,7 +1212,7 @@ class _UseKeyInWidgetConstructorsVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isWidgetClass = superclassName == 'StatelessWidget' ||
           superclassName == 'StatefulWidget';
     }
@@ -1321,7 +1321,7 @@ class _AvoidUnnecessaryContainersVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     if (constructorName == 'Container') {
       bool hasMeaningfulProperty = false;
 
@@ -1414,7 +1414,7 @@ class _PreferConstConstructorsVisitor extends RecursiveAstVisitor<void> {
       return;
     }
 
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
 
     // Check common const widgets
     if (_commonConstWidgets.contains(constructorName)) {
@@ -1605,7 +1605,7 @@ class _PreferSizedBoxShrinkExpandVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     final namedConstructor = node.constructorName.name?.name;
 
     if (constructorName == 'SizedBox' && namedConstructor == null) {
@@ -1737,7 +1737,7 @@ class _PreferCorrectEdgeInsetsConstructorVisitor
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     final namedConstructor = node.constructorName.name?.name;
 
     if (constructorName == 'EdgeInsets' && namedConstructor == 'only') {
@@ -1870,7 +1870,7 @@ class _AvoidHardcodedColorsVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
     final namedConstructor = node.constructorName.name?.name;
 
     if (constructorName == 'Color' && namedConstructor == null) {
@@ -1951,7 +1951,7 @@ class _AvoidHardcodedStringsVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
 
     if (constructorName == 'Text') {
       for (final argument in node.argumentList.arguments) {
@@ -2025,14 +2025,14 @@ class _PreferSafeAreaVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
 
     if (constructorName == 'Scaffold') {
       for (final argument in node.argumentList.arguments) {
         if (argument is NamedExpression && argument.name.label.name == 'body') {
           final body = argument.expression;
           if (body is InstanceCreationExpression) {
-            final bodyTypeName = body.constructorName.type.name2.lexeme;
+            final bodyTypeName = body.constructorName.type.name.lexeme;
             // Check if body is wrapped in SafeArea
             if (bodyTypeName != 'SafeArea') {
               issues.add(DcmIssue(
@@ -2101,7 +2101,7 @@ class _AvoidSetStateInBuildVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInStateClass = superclassName.startsWith('State');
     }
     super.visitClassDeclaration(node);
@@ -2260,7 +2260,7 @@ class _AvoidWrappingInPaddingVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
 
     if (constructorName == 'Padding') {
       // Check what the child is
@@ -2269,7 +2269,7 @@ class _AvoidWrappingInPaddingVisitor extends RecursiveAstVisitor<void> {
             argument.name.label.name == 'child') {
           final child = argument.expression;
           if (child is InstanceCreationExpression) {
-            final childName = child.constructorName.type.name2.lexeme;
+            final childName = child.constructorName.type.name.lexeme;
             if (_widgetsWithPadding.contains(childName)) {
               issues.add(DcmIssue(
                 offset: node.offset,
@@ -2332,7 +2332,7 @@ class _CheckForEqualsInRenderObjectSettersVisitor
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInRenderObjectClass = superclassName.startsWith('Render') ||
           superclassName == 'RenderBox' ||
           superclassName == 'RenderSliver' ||
@@ -2435,7 +2435,7 @@ class _PreferWidgetPrivateMembersVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInWidgetClass = superclassName == 'StatelessWidget' ||
           superclassName == 'StatefulWidget';
     }
@@ -2510,7 +2510,7 @@ class _AvoidLateContextVisitor extends RecursiveAstVisitor<void> {
   void visitFieldDeclaration(FieldDeclaration node) {
     if (node.fields.isLate) {
       final type = node.fields.type;
-      if (type is NamedType && type.name2.lexeme == 'BuildContext') {
+      if (type is NamedType && type.name.lexeme == 'BuildContext') {
         for (final variable in node.fields.variables) {
           issues.add(DcmIssue(
             offset: variable.name.offset,
@@ -2670,7 +2670,7 @@ class _AvoidUsingExpandedOnScrollableVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final constructorName = node.constructorName.type.name2.lexeme;
+    final constructorName = node.constructorName.type.name.lexeme;
 
     if (constructorName == 'Expanded' || constructorName == 'Flexible') {
       for (final argument in node.argumentList.arguments) {
@@ -2678,7 +2678,7 @@ class _AvoidUsingExpandedOnScrollableVisitor extends RecursiveAstVisitor<void> {
             argument.name.label.name == 'child') {
           final child = argument.expression;
           if (child is InstanceCreationExpression) {
-            final childName = child.constructorName.type.name2.lexeme;
+            final childName = child.constructorName.type.name.lexeme;
             if (_scrollableWidgets.contains(childName)) {
               issues.add(DcmIssue(
                 offset: node.offset,

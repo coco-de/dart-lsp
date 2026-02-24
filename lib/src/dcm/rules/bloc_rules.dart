@@ -46,7 +46,7 @@ class _AvoidPassingBlocToBlocVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInBlocClass = superclassName == 'Bloc' || superclassName == 'Cubit';
     }
     super.visitClassDeclaration(node);
@@ -81,7 +81,7 @@ class _AvoidPassingBlocToBlocVisitor extends RecursiveAstVisitor<void> {
     if (param is SimpleFormalParameter) {
       final type = param.type;
       if (type is NamedType) {
-        return type.name2.lexeme;
+        return type.name.lexeme;
       }
     } else if (param is DefaultFormalParameter) {
       return _getParameterType(param.parameter);
@@ -135,7 +135,7 @@ class _AvoidBlocPublicFieldsVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInBlocClass = superclassName == 'Bloc' || superclassName == 'Cubit';
     }
     super.visitClassDeclaration(node);
@@ -212,14 +212,14 @@ class _PreferMultiBlocProviderVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.name2.lexeme;
+    final typeName = node.constructorName.type.name.lexeme;
     if (typeName == 'BlocProvider') {
       // Check if child is also a BlocProvider
       final childArg = _findNamedArgument(node.argumentList, 'child');
       if (childArg != null) {
         final childExpr = childArg.expression;
         if (childExpr is InstanceCreationExpression) {
-          final childTypeName = childExpr.constructorName.type.name2.lexeme;
+          final childTypeName = childExpr.constructorName.type.name.lexeme;
           if (childTypeName == 'BlocProvider') {
             issues.add(DcmIssue(
               offset: node.offset,
@@ -288,7 +288,7 @@ class _PreferBlocExtensionsVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       _isInStatefulWidget = superclassName.startsWith('State');
     }
     super.visitClassDeclaration(node);
@@ -371,7 +371,7 @@ class _ProperBlocStateNamingVisitor extends RecursiveAstVisitor<void> {
     // First pass: collect state class names
     for (final declaration in node.declarations) {
       if (declaration is ClassDeclaration) {
-        final className = declaration.name.lexeme;
+        final className = declaration.namePart.typeName.lexeme;
         if (className.endsWith('State')) {
           _stateClasses.add(className);
         }
@@ -379,7 +379,7 @@ class _ProperBlocStateNamingVisitor extends RecursiveAstVisitor<void> {
         // Check if extends a State class
         final extendsClause = declaration.extendsClause;
         if (extendsClause != null) {
-          final superclassName = extendsClause.superclass.name2.lexeme;
+          final superclassName = extendsClause.superclass.name.lexeme;
           if (superclassName.endsWith('State') &&
               !className.endsWith('State')) {
             _stateSubclasses.add(declaration);
@@ -390,10 +390,10 @@ class _ProperBlocStateNamingVisitor extends RecursiveAstVisitor<void> {
 
     // Check subclasses for proper naming
     for (final subclass in _stateSubclasses) {
-      final className = subclass.name.lexeme;
+      final className = subclass.namePart.typeName.lexeme;
       final extendsClause = subclass.extendsClause;
       if (extendsClause != null) {
-        final baseName = extendsClause.superclass.name2.lexeme;
+        final baseName = extendsClause.superclass.name.lexeme;
         final featurePrefix = baseName.replaceAll('State', '');
 
         // Valid patterns:
@@ -425,8 +425,8 @@ class _ProperBlocStateNamingVisitor extends RecursiveAstVisitor<void> {
 
         if (!isValidName) {
           issues.add(DcmIssue(
-            offset: subclass.name.offset,
-            length: subclass.name.length,
+            offset: subclass.namePart.typeName.offset,
+            length: subclass.namePart.typeName.length,
             message:
                 "State class '$className' should start with feature prefix '$featurePrefix'.",
             severity: DiagnosticSeverity.Information,

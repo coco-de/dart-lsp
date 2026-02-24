@@ -4,7 +4,7 @@ import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart' as ast;
 import 'package:analyzer/dart/ast/visitor.dart';
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/source/line_info.dart';
 import 'package:lsp_server/lsp_server.dart';
 import 'package:dart_style/dart_style.dart';
@@ -62,7 +62,7 @@ class DartAnalyzerService {
       '$home/fvm/default/bin/cache/dart-sdk', // FVM (Flutter)
       '/usr/local/opt/dart/libexec', // Homebrew Intel
       '/opt/homebrew/opt/dart/libexec', // Homebrew ARM
-      '/opt/homebrew/Cellar/dart/3.7.2/libexec', // Homebrew specific version
+      '/opt/homebrew/Cellar/dart/3.10.3/libexec', // Homebrew specific version
       '$home/.asdf/installs/dart/latest', // asdf
     ];
 
@@ -136,14 +136,14 @@ class DartAnalyzerService {
       final result = await context.currentSession.getResolvedUnit(filePath);
 
       if (result is ResolvedUnitResult) {
-        // Add analyzer errors
-        for (final error in result.errors) {
+        // Add analyzer diagnostics
+        for (final error in result.diagnostics) {
           diagnostics.add(Diagnostic(
             range: _offsetToRange(error.offset, error.length, result.lineInfo),
             message: error.message,
             severity: _convertSeverity(error.severity),
             source: 'dart',
-            code: error.errorCode.name,
+            code: error.diagnosticCode.lowerCaseName,
           ));
         }
 
@@ -310,8 +310,8 @@ class DartAnalyzerService {
                 return Location(
                   uri: Uri.file(sourceFile),
                   range: _offsetToRange(
-                    fragment.nameOffset2 ?? 0,
-                    element.name3?.length ?? 0,
+                    fragment.nameOffset ?? 0,
+                    element.name?.length ?? 0,
                     elementResult.lineInfo,
                   ),
                 );
@@ -518,6 +518,28 @@ class DartAnalyzerService {
     return null;
   }
 
+  /// Get Flutter widget tree outline from a file
+  Future<List<WidgetNode>> getFlutterOutline(String uri, String content) async {
+    final filePath = Uri.parse(uri).toFilePath();
+
+    if (_collection == null) return [];
+
+    try {
+      final context = _collection!.contextFor(filePath);
+      final result = await context.currentSession.getResolvedUnit(filePath);
+
+      if (result is ResolvedUnitResult) {
+        final visitor = _WidgetTreeVisitor(result.lineInfo);
+        result.unit.accept(visitor);
+        return visitor.roots;
+      }
+    } catch (e) {
+      Logger.instance.error('LSP', 'Flutter outline error: $e');
+    }
+
+    return [];
+  }
+
   /// Dispose resources
   Future<void> dispose() async {
     _collection = null;
@@ -560,14 +582,14 @@ class DartAnalyzerService {
     return found;
   }
 
-  Element2? _getElementForNode(ast.AstNode node) {
+  Element? _getElementForNode(ast.AstNode node) {
     if (node is ast.SimpleIdentifier) {
       return node.element;
     }
     return null;
   }
 
-  String _formatElementDocumentation(Element2 element) {
+  String _formatElementDocumentation(Element element) {
     final buffer = StringBuffer();
 
     // Add element type and name
@@ -578,13 +600,13 @@ class DartAnalyzerService {
     return buffer.toString();
   }
 
-  String _getElementSignature(Element2 element) {
+  String _getElementSignature(Element element) {
     if (element is TopLevelFunctionElement) {
       return element.displayName;
-    } else if (element is ClassElement2) {
-      return 'class ${element.name3}';
-    } else if (element is TopLevelVariableElement2) {
-      return '${element.type} ${element.name3}';
+    } else if (element is ClassElement) {
+      return 'class ${element.name}';
+    } else if (element is TopLevelVariableElement) {
+      return '${element.type} ${element.name}';
     }
     return element.displayName;
   }
@@ -619,19 +641,22 @@ class DartAnalyzerService {
     LineInfo lineInfo,
   ) {
     if (declaration is ast.ClassDeclaration) {
+      final classBody = declaration.body;
       return DocumentSymbol(
-        name: declaration.name.lexeme,
+        name: declaration.namePart.typeName.lexeme,
         kind: SymbolKind.Class,
         range: _offsetToRange(declaration.offset, declaration.length, lineInfo),
         selectionRange: _offsetToRange(
-          declaration.name.offset,
-          declaration.name.length,
+          declaration.namePart.typeName.offset,
+          declaration.namePart.typeName.length,
           lineInfo,
         ),
-        children: declaration.members
-            .map((m) => _memberToSymbol(m, lineInfo))
-            .whereType<DocumentSymbol>()
-            .toList(),
+        children: classBody is ast.BlockClassBody
+            ? classBody.members
+                .map((m) => _memberToSymbol(m, lineInfo))
+                .whereType<DocumentSymbol>()
+                .toList()
+            : [],
       );
     } else if (declaration is ast.FunctionDeclaration) {
       return DocumentSymbol(
@@ -710,6 +735,228 @@ class DartAnalyzerService {
     }
     return null;
   }
+}
+
+/// Represents a widget in the Flutter widget tree
+class WidgetNode {
+  WidgetNode({
+    required this.name,
+    required this.line,
+    required this.column,
+    List<WidgetNode>? children,
+  }) : children = children ?? [];
+
+  final String name;
+  final int line;
+  final int column;
+  final List<WidgetNode> children;
+}
+
+/// Common Flutter widget names for fallback detection
+const _commonWidgetNames = <String>{
+  // Layout
+  'Container', 'Center', 'Padding', 'Align', 'SizedBox', 'ConstrainedBox',
+  'FittedBox', 'AspectRatio', 'FractionallySizedBox', 'IntrinsicHeight',
+  'IntrinsicWidth', 'LimitedBox', 'Offstage', 'OverflowBox', 'Transform',
+  // Flex
+  'Row', 'Column', 'Flex', 'Wrap', 'Flow', 'Stack', 'IndexedStack',
+  'Positioned', 'Expanded', 'Flexible', 'Spacer',
+  // Scroll
+  'ListView', 'GridView', 'SingleChildScrollView', 'CustomScrollView',
+  'NestedScrollView', 'PageView', 'SliverList', 'SliverGrid',
+  'SliverAppBar', 'SliverToBoxAdapter', 'SliverPadding',
+  'SliverFillRemaining',
+  // Material
+  'Scaffold', 'AppBar', 'BottomNavigationBar', 'TabBar', 'TabBarView',
+  'Drawer', 'FloatingActionButton', 'MaterialApp', 'Card', 'ListTile',
+  'ExpansionTile', 'BottomSheet', 'Dialog', 'AlertDialog',
+  'SimpleDialog', 'SnackBar', 'NavigationBar', 'NavigationRail',
+  // Buttons
+  'ElevatedButton', 'TextButton', 'OutlinedButton', 'IconButton',
+  'FilledButton', 'PopupMenuButton',
+  'DropdownButton',
+  // Input
+  'TextField', 'TextFormField', 'Checkbox', 'Radio', 'Switch',
+  'Slider', 'DropdownButtonFormField', 'Form', 'FormField',
+  // Text & Image
+  'Text', 'RichText', 'Icon', 'Image', 'CircleAvatar',
+  // Interactive
+  'GestureDetector', 'InkWell', 'InkResponse', 'Dismissible', 'Draggable',
+  'DragTarget', 'LongPressDraggable', 'AbsorbPointer', 'IgnorePointer',
+  // State management
+  'Builder', 'StatefulBuilder', 'FutureBuilder', 'StreamBuilder',
+  'ValueListenableBuilder', 'AnimatedBuilder', 'LayoutBuilder',
+  'OrientationBuilder',
+  // Animation
+  'AnimatedContainer', 'AnimatedOpacity', 'AnimatedPositioned',
+  'AnimatedSize', 'AnimatedSwitcher', 'AnimatedCrossFade', 'Hero',
+  'FadeTransition', 'SlideTransition', 'ScaleTransition',
+  'RotationTransition', 'SizeTransition',
+  // Cupertino
+  'CupertinoApp', 'CupertinoPageScaffold', 'CupertinoNavigationBar',
+  'CupertinoButton', 'CupertinoTextField', 'CupertinoSwitch',
+  'CupertinoTabScaffold',
+  // Other
+  'SafeArea', 'MediaQuery', 'Theme', 'DefaultTextStyle', 'Opacity',
+  'Visibility', 'ClipRRect', 'ClipOval', 'ClipPath', 'DecoratedBox',
+  'ColoredBox', 'PhysicalModel', 'RepaintBoundary', 'Tooltip',
+  'Semantics', 'Divider', 'PopScope', 'Navigator',
+};
+
+/// Visitor that builds widget tree from build() methods
+class _WidgetTreeVisitor extends RecursiveAstVisitor<void> {
+  _WidgetTreeVisitor(this._lineInfo);
+
+  final LineInfo _lineInfo;
+  final List<WidgetNode> roots = [];
+
+  @override
+  void visitMethodDeclaration(ast.MethodDeclaration node) {
+    if (node.name.lexeme == 'build') {
+      final body = node.body;
+      if (body is ast.ExpressionFunctionBody) {
+        final widget = _visitExpression(body.expression);
+        if (widget != null) roots.add(widget);
+      } else if (body is ast.BlockFunctionBody) {
+        // Look for return statements
+        final finder = _ReturnFinder();
+        body.accept(finder);
+        for (final ret in finder.returns) {
+          if (ret.expression != null) {
+            final widget = _visitExpression(ret.expression!);
+            if (widget != null) roots.add(widget);
+          }
+        }
+      }
+    }
+    // Don't recurse into nested classes/methods for separate build() methods
+    // but do call super to find build() in nested classes
+    super.visitMethodDeclaration(node);
+  }
+
+  WidgetNode? _visitExpression(ast.Expression expr) {
+    if (expr is ast.InstanceCreationExpression) {
+      final name = expr.constructorName.type.name.lexeme;
+      if (!_isWidget(name, expr)) return null;
+
+      final loc = _lineInfo.getLocation(expr.offset);
+      final node = WidgetNode(
+        name: name,
+        line: loc.lineNumber,
+        column: loc.columnNumber,
+      );
+
+      // Search arguments for child widgets
+      for (final arg in expr.argumentList.arguments) {
+        final argExpr =
+            arg is ast.NamedExpression ? arg.expression : arg;
+        final children = _extractWidgets(argExpr);
+        node.children.addAll(children);
+      }
+
+      return node;
+    } else if (expr is ast.ParenthesizedExpression) {
+      return _visitExpression(expr.expression);
+    } else if (expr is ast.ConditionalExpression) {
+      // condition ? widgetA : widgetB — collect both branches
+      final thenWidget = _visitExpression(expr.thenExpression);
+      final elseWidget = _visitExpression(expr.elseExpression);
+      final children = <WidgetNode>[
+        ?thenWidget,
+        ?elseWidget,
+      ];
+      if (children.isNotEmpty) {
+        final loc = _lineInfo.getLocation(expr.offset);
+        return WidgetNode(
+          name: '(conditional)',
+          line: loc.lineNumber,
+          column: loc.columnNumber,
+          children: children,
+        );
+      }
+    }
+    return null;
+  }
+
+  List<WidgetNode> _extractWidgets(ast.Expression expr) {
+    final widgets = <WidgetNode>[];
+    final widget = _visitExpression(expr);
+    if (widget != null) {
+      widgets.add(widget);
+    } else if (expr is ast.ListLiteral) {
+      for (final element in expr.elements) {
+        if (element is ast.Expression) {
+          final w = _visitExpression(element);
+          if (w != null) widgets.add(w);
+        }
+      }
+    } else if (expr is ast.FunctionExpression) {
+      // Builder callbacks: (context) => Widget(...)
+      final body = expr.body;
+      if (body is ast.ExpressionFunctionBody) {
+        final w = _visitExpression(body.expression);
+        if (w != null) widgets.add(w);
+      } else if (body is ast.BlockFunctionBody) {
+        final finder = _ReturnFinder();
+        body.accept(finder);
+        for (final ret in finder.returns) {
+          if (ret.expression != null) {
+            final w = _visitExpression(ret.expression!);
+            if (w != null) widgets.add(w);
+          }
+        }
+      }
+    } else if (expr is ast.MethodInvocation) {
+      // Handle .map(...).toList() or method calls that return widgets
+      for (final arg in expr.argumentList.arguments) {
+        final argExpr =
+            arg is ast.NamedExpression ? arg.expression : arg;
+        widgets.addAll(_extractWidgets(argExpr));
+      }
+    }
+    return widgets;
+  }
+
+  bool _isWidget(String name, ast.InstanceCreationExpression expr) {
+    // Try resolved type first
+    final type = expr.staticType;
+    if (type != null && type.element is ClassElement) {
+      final classElement = type.element as ClassElement;
+      return _extendsWidget(classElement);
+    }
+    // Fallback to name-based detection
+    return _commonWidgetNames.contains(name) || name.endsWith('Widget');
+  }
+
+  bool _extendsWidget(ClassElement element) {
+    final visited = <ClassElement>{};
+    var current = element;
+    while (visited.add(current)) {
+      final name = current.name;
+      if (name == 'Widget' || name == 'StatelessWidget' ||
+          name == 'StatefulWidget' || name == 'RenderObjectWidget') {
+        return true;
+      }
+      final supertype = current.supertype;
+      if (supertype == null || supertype.element is! ClassElement) break;
+      current = supertype.element as ClassElement;
+    }
+    return false;
+  }
+}
+
+/// Finds return statements in a function body
+class _ReturnFinder extends RecursiveAstVisitor<void> {
+  final List<ast.ReturnStatement> returns = [];
+
+  @override
+  void visitReturnStatement(ast.ReturnStatement node) {
+    returns.add(node);
+  }
+
+  // Don't descend into nested functions
+  @override
+  void visitFunctionExpression(ast.FunctionExpression node) {}
 }
 
 /// Visitor to find AST node at offset

@@ -49,7 +49,7 @@ cd dart-lsp
 make install
 ```
 
-**요구사항**: Dart SDK 3.0+
+**요구사항**: Dart SDK 3.10.3+
 
 ## 🎯 특징
 

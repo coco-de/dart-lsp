@@ -46,7 +46,7 @@ class _ExtendEquatableVisitor extends RecursiveAstVisitor<void> {
     // Check if already extends Equatable
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
       if (superclassName == 'Equatable') {
         super.visitClassDeclaration(node);
         return;
@@ -66,26 +66,32 @@ class _ExtendEquatableVisitor extends RecursiveAstVisitor<void> {
     bool overridesEquals = false;
     bool overridesHashCode = false;
 
-    for (final member in node.members) {
-      if (member is MethodDeclaration) {
-        final name = member.name.lexeme;
-        if (name == '==' && member.isOperator) {
-          overridesEquals = true;
+    if (node.body case BlockClassBody body) {
+      for (final member in body.members) {
+        if (member is MethodDeclaration) {
+          final name = member.name.lexeme;
+          if (name == '==' && member.isOperator) {
+            overridesEquals = true;
+          }
         }
-      }
-      if (member is MethodDeclaration && member.isGetter) {
-        if (member.name.lexeme == 'hashCode') {
-          overridesHashCode = true;
+        if (member is MethodDeclaration && member.isGetter) {
+          if (member.name.lexeme == 'hashCode') {
+            overridesHashCode = true;
+          }
         }
       }
     }
 
+    final className = node.namePart.typeName.lexeme;
+    final classNameOffset = node.namePart.typeName.offset;
+    final classNameLength = node.namePart.typeName.length;
+
     if (overridesEquals && overridesHashCode) {
       issues.add(DcmIssue(
-        offset: node.name.offset,
-        length: node.name.length,
+        offset: classNameOffset,
+        length: classNameLength,
         message:
-            "Class '${node.name.lexeme}' manually overrides == and hashCode. Consider extending Equatable for cleaner value equality.",
+            "Class '$className' manually overrides == and hashCode. Consider extending Equatable for cleaner value equality.",
         severity: DiagnosticSeverity.Information,
         ruleId: 'extend-equatable',
         suggestion: 'Extend Equatable and implement props getter',
@@ -93,10 +99,10 @@ class _ExtendEquatableVisitor extends RecursiveAstVisitor<void> {
     } else if (hasImmutableAnnotation && !overridesEquals) {
       // Immutable classes should probably implement equality
       issues.add(DcmIssue(
-        offset: node.name.offset,
-        length: node.name.length,
+        offset: classNameOffset,
+        length: classNameLength,
         message:
-            "Immutable class '${node.name.lexeme}' does not implement value equality. Consider extending Equatable.",
+            "Immutable class '$className' does not implement value equality. Consider extending Equatable.",
         severity: DiagnosticSeverity.Information,
         ruleId: 'extend-equatable',
         suggestion: 'Extend Equatable for proper value comparison',
@@ -150,7 +156,7 @@ class _EquatableProperSuperCallsVisitor extends RecursiveAstVisitor<void> {
 
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name2.lexeme;
+      final superclassName = extendsClause.superclass.name.lexeme;
 
       // Check if extends something other than Equatable directly
       // (which would be an Equatable subclass)

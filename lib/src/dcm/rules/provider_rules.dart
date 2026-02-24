@@ -223,7 +223,7 @@ class _DisposeProvidersVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.name2.lexeme;
+    final typeName = node.constructorName.type.name.lexeme;
 
     // Check if using ChangeNotifierProvider without dispose consideration
     if (typeName == 'ChangeNotifierProvider') {
@@ -303,7 +303,7 @@ class _PreferMultiProviderVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.name2.lexeme;
+    final typeName = node.constructorName.type.name.lexeme;
 
     if (_providerTypes.contains(typeName)) {
       // Check if child is also a Provider
@@ -311,7 +311,7 @@ class _PreferMultiProviderVisitor extends RecursiveAstVisitor<void> {
       if (childArg != null) {
         final childExpr = childArg.expression;
         if (childExpr is InstanceCreationExpression) {
-          final childTypeName = childExpr.constructorName.type.name2.lexeme;
+          final childTypeName = childExpr.constructorName.type.name.lexeme;
           if (_providerTypes.contains(childTypeName)) {
             issues.add(DcmIssue(
               offset: node.offset,

@@ -43,7 +43,7 @@ class _AvoidDynamicVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitNamedType(NamedType node) {
-    if (node.name2.lexeme == 'dynamic') {
+    if (node.name.lexeme == 'dynamic') {
       issues.add(DcmIssue(
         offset: node.offset,
         length: node.length,
@@ -2171,7 +2171,7 @@ class _AvoidPositionalBooleanParametersVisitor
     for (final param in node.parameters) {
       if (param is SimpleFormalParameter && !param.isNamed) {
         final type = param.type;
-        if (type is NamedType && type.name2.lexeme == 'bool') {
+        if (type is NamedType && type.name.lexeme == 'bool') {
           issues.add(DcmIssue(
             offset: param.offset,
             length: param.length,
@@ -3093,13 +3093,13 @@ class PreferMatchFileNameRule extends DcmRule {
     // Find the first public class or top-level function
     for (final declaration in result.unit.declarations) {
       if (declaration is ClassDeclaration) {
-        final className = declaration.name.lexeme;
+        final className = declaration.namePart.typeName.lexeme;
         if (!className.startsWith('_')) {
           if (className != expectedClassName &&
               className != '${expectedClassName}s') {
             issues.add(DcmIssue(
-              offset: declaration.name.offset,
-              length: declaration.name.length,
+              offset: declaration.namePart.typeName.offset,
+              length: declaration.namePart.typeName.length,
               message:
                   "Class '$className' doesn't match file name. Expected '$expectedClassName' based on file '$fileName'.",
               severity: DiagnosticSeverity.Information,

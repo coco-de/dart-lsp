@@ -381,6 +381,92 @@ class DartMcpServer {
           },
         },
         {
+          'name': 'dart_pub',
+          'description': 'Run pub commands (get, upgrade, outdated, add, remove) '
+              'for Dart/Flutter package management.',
+          'inputSchema': {
+            'type': 'object',
+            'properties': {
+              'path': {
+                'type': 'string',
+                'description': 'Project directory path',
+              },
+              'command': {
+                'type': 'string',
+                'description':
+                    'Pub command to run (get, upgrade, outdated, add, remove)',
+                'enum': ['get', 'upgrade', 'outdated', 'add', 'remove'],
+              },
+              'package': {
+                'type': 'string',
+                'description':
+                    'Package name (required for add/remove commands)',
+              },
+              'dev': {
+                'type': 'boolean',
+                'description':
+                    'Add as dev dependency (only for add command)',
+                'default': false,
+              },
+            },
+            'required': ['path', 'command'],
+          },
+        },
+        {
+          'name': 'dart_test',
+          'description':
+              'Run Dart/Flutter tests. Supports filtering by name, '
+                  'file path, and coverage collection.',
+          'inputSchema': {
+            'type': 'object',
+            'properties': {
+              'path': {
+                'type': 'string',
+                'description':
+                    'Project directory or test file path',
+              },
+              'name': {
+                'type': 'string',
+                'description':
+                    'Test name filter (regex pattern for --name flag)',
+              },
+              'reporter': {
+                'type': 'string',
+                'description': 'Test output reporter format',
+                'enum': ['json', 'compact', 'expanded'],
+                'default': 'json',
+              },
+              'coverage': {
+                'type': 'boolean',
+                'description': 'Collect code coverage',
+                'default': false,
+              },
+            },
+            'required': ['path'],
+          },
+        },
+        {
+          'name': 'dart_flutter_outline',
+          'description':
+              'Get Flutter widget tree outline from a Dart file. '
+                  'Shows hierarchical widget structure for understanding '
+                  'and refactoring complex widget trees.',
+          'inputSchema': {
+            'type': 'object',
+            'properties': {
+              'uri': {
+                'type': 'string',
+                'description': 'File URI (file:///path/to/file.dart)',
+              },
+              'content': {
+                'type': 'string',
+                'description': 'File content to analyze',
+              },
+            },
+            'required': ['uri', 'content'],
+          },
+        },
+        {
           'name': 'dart_logs',
           'description': 'View server logs for debugging and monitoring. '
               'Filter by level, source, time range, or search term.',
@@ -439,6 +525,12 @@ class DartMcpServer {
         return _toolCodeActions(arguments);
       case 'dart_add_workspace':
         return _toolAddWorkspace(arguments);
+      case 'dart_pub':
+        return _toolPub(arguments);
+      case 'dart_test':
+        return _toolTest(arguments);
+      case 'dart_flutter_outline':
+        return _toolFlutterOutline(arguments);
       case 'dart_logs':
         return _toolLogs(arguments);
       default:
@@ -458,7 +550,7 @@ class DartMcpServer {
       // Extract code value from Either<int, String> or use toString
       final codeValue = d.code?.toString();
       return {
-        'severity': _severityToString(d.severity),
+        'severity': severityToString(d.severity),
         'message': d.message,
         'range': {
           'start': {
@@ -478,7 +570,7 @@ class DartMcpServer {
           'type': 'text',
           'text': result.isEmpty
               ? '✅ No issues found'
-              : '🔍 Found ${result.length} issue(s):\n\n${_formatDiagnostics(result)}',
+              : '🔍 Found ${result.length} issue(s):\n\n${formatDiagnostics(result)}',
         },
       ],
       'isError': result.any((d) => d['severity'] == 'error'),
@@ -500,7 +592,7 @@ class DartMcpServer {
         .take(20)
         .map((c) => {
               'label': c.label,
-              'kind': _completionKindToString(c.kind),
+              'kind': completionKindToString(c.kind),
               'detail': c.detail,
               'insertText': c.insertText ?? c.label,
             })
@@ -512,7 +604,7 @@ class DartMcpServer {
           'type': 'text',
           'text': result.isEmpty
               ? 'No completions available'
-              : '💡 Completions:\n\n${_formatCompletions(result)}',
+              : '💡 Completions:\n\n${formatCompletions(result)}',
         },
       ],
     };
@@ -599,10 +691,10 @@ class DartMcpServer {
     // Apply edits to get formatted content
     String formattedContent = content;
     for (final edit in edits.reversed) {
-      final startOffset = _getOffset(
+      final startOffset = getOffset(
           content, edit.range.start.line, edit.range.start.character);
       final endOffset =
-          _getOffset(content, edit.range.end.line, edit.range.end.character);
+          getOffset(content, edit.range.end.line, edit.range.end.character);
       formattedContent = formattedContent.substring(0, startOffset) +
           edit.newText +
           formattedContent.substring(endOffset);
@@ -747,6 +839,197 @@ class DartMcpServer {
     };
   }
 
+  /// Tool: Run pub commands
+  Future<Map<String, dynamic>> _toolPub(Map<String, dynamic> args) async {
+    final path = args['path'] as String;
+    final command = args['command'] as String;
+    final package = args['package'] as String?;
+    final dev = args['dev'] as bool? ?? false;
+
+    final projectRoot = findProjectRoot(path);
+    if (projectRoot == null) {
+      return {
+        'content': [
+          {'type': 'text', 'text': '❌ No pubspec.yaml found in $path'},
+        ],
+        'isError': true,
+      };
+    }
+
+    // Validate package is provided for add/remove
+    if ((command == 'add' || command == 'remove') &&
+        (package == null || package.isEmpty)) {
+      return {
+        'content': [
+          {
+            'type': 'text',
+            'text': '❌ Package name is required for pub $command',
+          },
+        ],
+        'isError': true,
+      };
+    }
+
+    final pubArgs = ['pub', command];
+    if (command == 'add') {
+      if (dev) pubArgs.add('--dev');
+      pubArgs.add(package!);
+    } else if (command == 'remove') {
+      pubArgs.add(package!);
+    }
+
+    try {
+      final result = await _runProjectCommand(projectRoot, pubArgs);
+      final output = StringBuffer();
+      if ((result.stdout as String).isNotEmpty) {
+        output.writeln(result.stdout);
+      }
+      if ((result.stderr as String).isNotEmpty) {
+        output.writeln(result.stderr);
+      }
+
+      final isError = result.exitCode != 0;
+      final icon = isError ? '❌' : '✅';
+      return {
+        'content': [
+          {
+            'type': 'text',
+            'text': '$icon pub $command (exit code: ${result.exitCode})\n\n'
+                '${output.toString().trim()}',
+          },
+        ],
+        'isError': isError,
+      };
+    } on TimeoutException catch (e) {
+      return {
+        'content': [
+          {'type': 'text', 'text': '❌ ${e.message}'},
+        ],
+        'isError': true,
+      };
+    }
+  }
+
+  /// Tool: Run tests
+  Future<Map<String, dynamic>> _toolTest(Map<String, dynamic> args) async {
+    final path = args['path'] as String;
+    final name = args['name'] as String?;
+    final reporter = args['reporter'] as String? ?? 'json';
+    final coverage = args['coverage'] as bool? ?? false;
+
+    // Determine project root and optional test file
+    String? projectRoot;
+    String? testFile;
+    if (FileSystemEntity.isFileSync(path)) {
+      testFile = path;
+      projectRoot = findProjectRoot(path);
+    } else {
+      projectRoot = findProjectRoot(path) ?? path;
+    }
+
+    if (projectRoot == null) {
+      return {
+        'content': [
+          {'type': 'text', 'text': '❌ No pubspec.yaml found for $path'},
+        ],
+        'isError': true,
+      };
+    }
+
+    final testArgs = ['test', '--reporter', reporter];
+    if (name != null && name.isNotEmpty) {
+      testArgs.addAll(['--name', name]);
+    }
+    if (coverage) {
+      testArgs.add('--coverage');
+    }
+    if (testFile != null) {
+      testArgs.add(testFile);
+    }
+
+    try {
+      final result = await _runProjectCommand(
+        projectRoot,
+        testArgs,
+        timeout: const Duration(minutes: 10),
+      );
+
+      final stdout = result.stdout as String;
+      final stderr = result.stderr as String;
+
+      if (reporter == 'json') {
+        final summary = parseJsonTestResults(stdout);
+        final isError =
+            result.exitCode != 0 || summary.containsKey('failures');
+        return {
+          'content': [
+            {
+              'type': 'text',
+              'text': summary['formatted'] as String? ??
+                  '${stdout.trim()}\n${stderr.trim()}'.trim(),
+            },
+          ],
+          'isError': isError,
+        };
+      }
+
+      // compact/expanded: return raw output
+      final output = StringBuffer();
+      if (stdout.isNotEmpty) output.writeln(stdout);
+      if (stderr.isNotEmpty) output.writeln(stderr);
+
+      return {
+        'content': [
+          {
+            'type': 'text',
+            'text':
+                '🧪 Test results (exit code: ${result.exitCode})\n\n${output.toString().trim()}',
+          },
+        ],
+        'isError': result.exitCode != 0,
+      };
+    } on TimeoutException catch (e) {
+      return {
+        'content': [
+          {'type': 'text', 'text': '❌ ${e.message}'},
+        ],
+        'isError': true,
+      };
+    }
+  }
+
+  /// Tool: Flutter widget outline
+  Future<Map<String, dynamic>> _toolFlutterOutline(
+      Map<String, dynamic> args) async {
+    final uri = args['uri'] as String;
+    final content = args['content'] as String;
+
+    _documentManager.openDocument(uri, content);
+    final widgets = await _analyzerService.getFlutterOutline(uri, content);
+
+    if (widgets.isEmpty) {
+      return {
+        'content': [
+          {
+            'type': 'text',
+            'text': 'No widget tree found. '
+                'Ensure the file contains Flutter widget code with build() methods.',
+          },
+        ],
+      };
+    }
+
+    final tree = formatWidgetTree(widgets, 0);
+    return {
+      'content': [
+        {
+          'type': 'text',
+          'text': '🌳 Widget Tree:\n\n$tree',
+        },
+      ],
+    };
+  }
+
   /// Format log entries for display
   String _formatLogs(List<LogEntry> entries) {
     return entries.map((e) => e.format()).join('\n');
@@ -822,54 +1105,6 @@ class DartMcpServer {
   //   stdout.writeln(notification);
   // }
 
-  String _severityToString(dynamic severity) {
-    final name = severity.toString().toLowerCase();
-    if (name.contains('error')) return 'error';
-    if (name.contains('warning')) return 'warning';
-    if (name.contains('info')) return 'info';
-    return 'hint';
-  }
-
-  String _completionKindToString(dynamic kind) {
-    if (kind == null) return 'text';
-    final name = kind.toString().toLowerCase();
-    if (name.contains('class')) return 'class';
-    if (name.contains('function') || name.contains('method')) return 'function';
-    if (name.contains('variable') || name.contains('field')) return 'variable';
-    if (name.contains('property')) return 'property';
-    if (name.contains('snippet')) return 'snippet';
-    return 'text';
-  }
-
-  String _formatDiagnostics(List<Map<String, dynamic>> diagnostics) {
-    return diagnostics.map((d) {
-      final severity = d['severity'] as String?;
-      final icon =
-          severity == 'error' ? '❌' : (severity == 'warning' ? '⚠️' : 'ℹ️');
-      final range = d['range'] as Map<String, dynamic>;
-      final start = range['start'] as Map<String, dynamic>;
-      final line = (start['line'] as int) + 1;
-      final col = (start['character'] as int) + 1;
-      return '$icon Line $line:$col - ${d['message']}';
-    }).join('\n');
-  }
-
-  String _formatCompletions(List<Map<String, dynamic>> completions) {
-    return completions.map((c) {
-      final kind = c['kind'];
-      final icon = kind == 'class'
-          ? '📦'
-          : kind == 'function'
-              ? '🔹'
-              : kind == 'variable'
-                  ? '📎'
-                  : kind == 'property'
-                      ? '🔸'
-                      : '•';
-      return '$icon ${c['label']}${c['detail'] != null ? ' - ${c['detail']}' : ''}';
-    }).join('\n');
-  }
-
   // ignore: avoid_dynamic_calls - DocumentSymbol from LSP uses dynamic properties
   String _formatSymbols(List<dynamic> symbols, int indent) {
     final prefix = '  ' * indent;
@@ -891,21 +1126,29 @@ class DartMcpServer {
     }).join('\n');
   }
 
-  int _getOffset(String content, int line, int character) {
-    final lines = content.split('\n');
-    var offset = 0;
-    for (var i = 0; i < line && i < lines.length; i++) {
-      offset += lines[i].length + 1; // +1 for newline
-    }
-    final result = offset + character;
-    // Clamp to content length to avoid RangeError
-    return result > content.length ? content.length : result;
-  }
-
   dynamic _createRange(int startLine, int startChar, int endLine, int endChar) {
     // This would need to import lsp_server types
     // For now, returning a map that can be converted
     return _Range(startLine, startChar, endLine, endChar);
+  }
+
+  /// Run dart or flutter command depending on project type
+  Future<ProcessResult> _runProjectCommand(
+    String projectPath,
+    List<String> args, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    final isFlutter = isFlutterProject(projectPath);
+    final executable = isFlutter ? 'flutter' : 'dart';
+    _log.info('MCP', 'Running: $executable ${args.join(' ')} in $projectPath');
+    return Process.run(
+      executable,
+      args,
+      workingDirectory: projectPath,
+    ).timeout(timeout, onTimeout: () {
+      throw TimeoutException(
+          '$executable ${args.first} timed out after ${timeout.inMinutes} minutes');
+    });
   }
 }
 
